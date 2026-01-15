@@ -53,7 +53,7 @@ export default function SalesPage() {
       {/* 2. CONTENIDO PRINCIPAL (PRODUCTOS) */}
       <main className="flex-1 flex flex-col p-6 overflow-y-auto">
         {/* Header Superior */}
-        <header className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 z-30 shadow-sm mb-4">
+        <header className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center top-0 z-30 shadow-sm mb-4">
           <div>
             <h1 className="text-2xl font-bold text-[#275791] tracking-tight">
               Nombre del emprendimiento
@@ -115,8 +115,8 @@ export default function SalesPage() {
         </div>
 
         {/* Grid de Productos */}
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-          {[1, 2, 3, 4, 5, 6].map((item) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6">
+          {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((item) => (
             <motion.div
               key={item}
               whileHover={{ y: -5 }}

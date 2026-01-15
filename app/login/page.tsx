@@ -263,13 +263,6 @@ export default function LoginPage() {
             </p>
           </div>
         </div>
-
-        {/* Decoración de borde inferior (Efecto cristal) */}
-        <div className="absolute bottom-10 left-10 right-10 p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 flex justify-between items-center text-white/50 text-xs font-bold uppercase tracking-widest">
-          <span>Server: CL-SCL-1</span>
-          <span>Uptime: 99.9%</span>
-          <span>Security: SSL Encrypted</span>
-        </div>
       </div>
     </div>
   );
