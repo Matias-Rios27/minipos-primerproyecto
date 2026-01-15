@@ -2,198 +2,274 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import Image from "next/image";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [email, setEmail] = useState("");
-  const [password, setPassword] = useState("");
-  const [remember, setRemember] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    setError("");
-
-    if (!email || !password) {
-      setError("Completa todos los campos");
-      return;
-    }
     setLoading(true);
-    router.push("/Main");
-    setTimeout(() => setLoading(false), 1500);
-
+    // Simulación de carga realista
+    setTimeout(() => {
+      router.push("/main");
+    }, 1200);
   };
 
   return (
-    <div className="min-h-screen flex font-sans overflow-hidden">
-      {/* Lado Izquierdo - Formulario con entrada suave */}
-      <motion.div 
-        initial={{ opacity: 0, x: -40 }}
-        animate={{ opacity: 1, x: 0 }}
-        transition={{ duration: 0.8, ease: "easeOut" }}
-        className="w-full lg:w-1/2 bg-white flex items-center justify-center p-8 z-10"
-      >
-        <form onSubmit={handleSubmit} className="w-full max-w-[400px] space-y-6">
-          
-          <div className="flex items-center gap-2 mb-8">
-            <span className="text-3xl">🏪</span>
-            <h1 className="text-xl font-bold text-gray-800">Nombre Emprendimiento</h1>
+    <div className="min-h-screen flex bg-slate-50 font-sans selection:bg-blue-100">
+      {/* LADO IZQUIERDO: FORMULARIO MINIMALISTA */}
+      <div className="w-full lg:w-[45%] flex items-center justify-center p-8 bg-white shadow-[20px_0_60px_-15px_rgba(0,0,0,0.05)] z-20">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="w-full max-w-md"
+        >
+          {/* Logo y Branding */}
+          <div className="flex items-center gap-3 mb-12">
+            <div className="w-10 h-10 bg-[#275791] rounded-xl flex items-center justify-center shadow-lg shadow-blue-900/20">
+              <span className="text-white text-xl font-bold">M</span>
+            </div>
+            <h1 className="text-xl font-extrabold text-slate-800 tracking-tight">
+              MiniPOS <span className="text-[#275791]">MTZ</span>
+            </h1>
           </div>
 
-          <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.2 }}
-            className="space-y-2"
-          >
-            <h2 className="text-4xl font-bold text-gray-900">Login</h2>
-            <p className="text-gray-500">Bienvenido de vuelta, ingresa tus datos.</p>
-          </motion.div>
+          <div className="mb-10">
+            <h2 className="text-3xl font-bold text-slate-900 mb-2">
+              Bienvenido
+            </h2>
+            <p className="text-slate-500">
+              Ingresa tus credenciales para acceder al panel.
+            </p>
+          </div>
 
-          {error && (
-            <motion.div 
-              initial={{ scale: 0.9, opacity: 0 }}
-              animate={{ scale: 1, opacity: 1 }}
-              className="bg-red-50 text-red-600 p-3 rounded-md text-sm border border-red-200"
-            >
-              {error}
-            </motion.div>
-          )}
-
-          <div className="space-y-4">
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">Correo electrónico</label>
+          <form onSubmit={handleSubmit} className="space-y-5">
+            <div className="space-y-2">
+              <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">
+                Email Corporativo
+              </label>
               <input
                 type="email"
-                placeholder="ejemplo@correo.com"
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                className="w-full border border-gray-300 text-black rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-[#275791] outline-none transition-all"
+                placeholder="usuario@minipos.cl"
+                className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-[#275791] outline-none transition-all text-slate-700"
                 required
               />
             </div>
 
-            <div className="space-y-1">
-              <label className="block text-sm font-medium text-gray-700">Contraseña</label>
+            <div className="space-y-2">
+              <div className="flex justify-between items-center">
+                <label className="text-xs font-bold text-slate-700 uppercase tracking-widest">
+                  Contraseña
+                </label>
+                <button
+                  type="button"
+                  className="text-xs font-bold text-[#275791] hover:underline"
+                >
+                  ¿La olvidaste?
+                </button>
+              </div>
               <div className="relative">
                 <input
                   type={showPassword ? "text" : "password"}
-                  placeholder="••••••••"
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                  className="w-full text-black border border-gray-300 rounded-lg px-4 py-2.5 focus:ring-2 focus:ring-[#275791] outline-none transition-all"
+                  placeholder="••••••••••••"
+                  className="w-full bg-slate-50 border border-slate-200 rounded-xl px-4 py-3.5 focus:bg-white focus:ring-4 focus:ring-blue-50 focus:border-[#275791] outline-none transition-all text-slate-700"
                   required
                 />
                 <button
                   type="button"
                   onClick={() => setShowPassword(!showPassword)}
-                  className="absolute right-3 top-1/2 -translate-y-1/2 text-gray-500 hover:text-gray-700"
+                  className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-600 transition-colors"
                 >
                   {showPassword ? "🙈" : "👁️"}
                 </button>
               </div>
             </div>
-          </div>
 
-          <div className="flex items-center justify-between">
-            <label className="flex items-center text-gray-700 gap-2 text-sm cursor-pointer">
+            <div className="flex items-center gap-3 py-2">
               <input
                 type="checkbox"
-                checked={remember}
-                onChange={(e) => setRemember(e.target.checked)}
-                className="w-4 h-4 rounded border-gray-300 accent-[#275791]"
+                id="remember"
+                className="w-5 h-5 rounded-md border-slate-300 text-[#275791] focus:ring-[#275791] cursor-pointer"
               />
-              Mantener sesión iniciada
-            </label>
-            <a href="#" className="text-sm font-medium text-[#275791] hover:underline transition-all">
-              ¿Olvidaste tu contraseña?
-            </a>
-          </div>
+              <label
+                htmlFor="remember"
+                className="text-sm text-slate-600 font-medium cursor-pointer"
+              >
+                Mantener sesión activa por 30 días
+              </label>
+            </div>
 
-          {/* ANIMACIONES */}
+            <button
+              type="submit"
+              disabled={loading}
+              className="w-full bg-[#275791] hover:bg-[#1a3d66] text-white font-bold py-4 rounded-xl transition-all shadow-xl shadow-blue-900/20 active:scale-[0.98] disabled:opacity-70 flex items-center justify-center gap-3 text-lg"
+            >
+              {loading ? (
+                <>
+                  <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  Iniciando sesión...
+                </>
+              ) : (
+                "Entrar al Sistema"
+              )}
+            </button>
+          </form>
 
-          <motion.button
-            whileHover={{ scale: 1.01 }}
-            whileTap={{ scale: 0.98 }}
-            type="submit"
-            disabled={loading}
-            className="w-full bg-[#275791] hover:bg-[#1e4470] text-white font-semibold py-3 rounded-lg transition-colors shadow-lg shadow-blue-900/20 disabled:opacity-70"
-          >
-            {loading ? "Cargando..." : "Iniciar Sesión"}
-          </motion.button>
-        </form>
-      </motion.div>
-
-      {/* Lado Derecho - Panel con Fondo Animado e Imagen con Pop */}
-      <div className="hidden lg:flex w-1/2 bg-[#275791] items-center justify-center relative overflow-hidden">
-        
-        {/* CUADROS DE FONDO - Animación de movimiento infinito */}
-        <motion.div 
-          animate={{ 
-            x: [ 0, 60],
-          }}
-          transition={{ 
-            duration: 2, 
-            repeat: Infinity, 
-            ease: "linear" 
-          }}
-          className="absolute inset-0 opacity-20"
-          style={{ width: '120%', height: '120%' }}
-        >
-          <svg width="100%" height="100%">
-            <pattern id="grid" width="60" height="60" patternUnits="userSpaceOnUse">
-              <path d="M 60 0 L 0 0 0 60" fill="none" stroke="white" strokeWidth="1"/>
-            </pattern>
-            <rect width="100%" height="100%" fill="url(#grid)" />
-          </svg>
+          <p className="text-center mt-12 text-slate-400 text-xs">
+            © 2026 MiniPOS MTZ v2.4.0 - Todos los derechos reservados.
+          </p>
         </motion.div>
-        
-        <div className="text-center z-10">
-          {/* IMAGEN PRINCIPAL */}
-          <motion.div 
-            initial={{ scale: 0, opacity: 0 }}
-            animate={{ scale: 1, opacity: 1 }}
-            transition={{ 
-              type: "spring", 
-              stiffness: 120, 
-              damping: 12,
-              delay: 0.5 
-            }}
-            className="bg-white/10 p-11 rounded-full backdrop-blur-md mb-5 inline-block border border-white/20"
-          >
-             <Image 
-                alt="Imagen Principal" 
-                src="/images/Icono-login.png" 
-                width={180} 
-                height={180}
-                priority
-                className="drop-shadow-2xl"
-             />
-          </motion.div> 
-          
+      </div>
+
+      {/* LADO DERECHO: PANEL VISUAL "REALISTA" */}
+      <div className="hidden lg:flex w-[55%] bg-[#275791] relative items-center justify-center overflow-hidden">
+        {/* FONDO TECNOLÓGICO (Malla de gradientes y ruido) */}
+        <div className="absolute inset-0 z-0">
+          {/* Gradiente base */}
+          <div className="absolute inset-0 bg-gradient-to-br from-[#275791] via-[#1e4470] to-[#162e4d]" />
+          {/* Animación de "Luces" de fondo */}
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
-          >
-            <h2 className="text-white text-3xl font-bold">MiniPOS</h2>
-            <h2 className="text-white text-3xl font-bold">Gestiona tu negocio</h2>
-            <p className="text-blue-100 mt-2 max-w-xs mx-auto text-lg">
-              La herramienta más potente para controlar tus ventas y finanzas.
-            </p>
-          </motion.div>
+            animate={{
+              scale: [1, 1.2, 1],
+              opacity: [0.3, 0.5, 0.3],
+            }}
+            transition={{ duration: 10, repeat: Infinity }}
+            className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-blue-400/20 rounded-full blur-[120px]"
+          />
+          {/* PRODUCTOS */}
+          Para que el fondo sea realmente dinámico y variado, vamos a crear una
+          matriz de productos diversos (comida, bebidas, electrónica, hogar)
+          utilizando diferentes vectores. Para lograr el efecto infinito sin que
+          los productos se queden "flotando", utilizaremos la técnica de clonado
+          de lista. El contenedor se moverá verticalmente y, al ser una lista
+          doble, el usuario nunca verá el corte. Aquí tienes el código
+          actualizado con variedad de productos: TypeScript
+          {/* PANEL DE PRODUCTOS VARIADOS - Movimiento Infinito Realista */}
+          <div className="absolute inset-0 opacity-15 pointer-events-none flex justify-around px-4">
+            {[...Array(5)].map((_, colIndex) => {
+              // Definimos un set de diferentes iconos para cada columna
+              const icons = [
+                <path
+                  key="1"
+                  d="M18 6h-2c0-2.21-1.79-4-4-4S8 3.79 8 6H6c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2z"
+                />, // Bolsa
+                <path
+                  key="2"
+                  d="M21 5V3H3v2l1 1v14c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V6l1-1zM6 19V6h12v13H6z"
+                />, // Bebida
+                <path
+                  key="3"
+                  d="M11 9H9V2H7v7H5V2H3v7c0 2.12 1.66 3.84 3.75 3.97V22h2.5v-9.03C11.34 12.84 13 11.12 13 9V2h-2v7z"
+                />, // Cubiertos
+                <path
+                  key="4"
+                  d="M20 4H4c-1.1 0-2 .9-2 2v12c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V6c0-1.1-.9-2-2-2zm-8 10H5V6h7v8z"
+                />, // Pantalla/TV
+                <path
+                  key="5"
+                  d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8z"
+                />, // Fruta/Círculo
+              ];
+
+              return (
+                <motion.div
+                  key={colIndex}
+                  initial={{ y: 0 }}
+                  animate={{ y: "-50%" }} // El truco del 50% para el loop infinito
+                  transition={{
+                    duration: 25 + colIndex * 3, // Diferentes velocidades por columna
+                    repeat: Infinity,
+                    ease: "linear",
+                  }}
+                  className="flex flex-col gap-16 py-8"
+                >
+                  {/* Duplicamos la lista de iconos para que no haya saltos visuales */}
+                  {[...Array(20)].map((_, i) => (
+                    <div
+                      key={i}
+                      className="text-white"
+                      style={{
+                        filter: `blur(${colIndex % 2 !== 0 ? "1px" : "0px"})`,
+                        opacity: colIndex % 2 !== 0 ? 0.5 : 1,
+                      }}
+                    >
+                      <svg
+                        width="40"
+                        height="40"
+                        viewBox="0 0 24 24"
+                        fill="currentColor"
+                      >
+                        {icons[i % icons.length]}
+                      </svg>
+                    </div>
+                  ))}
+                </motion.div>
+              );
+            })}
+          </div>
         </div>
 
-        {/* Círculos decorativos */}
-        <motion.div 
-          animate={{ scale: [1, 1.2, 1] }}
-          transition={{ duration: 8, repeat: Infinity }}
-          className="absolute -top-20 -left-20 w-64 h-64 bg-blue-400/10 rounded-full blur-3xl"
-        />
+        {/* CONTENIDO CENTRAL */}
+        <div className="relative z-10 text-center">
+          <motion.div
+            initial={{ opacity: 0, scale: 0.8 }}
+            animate={{ opacity: 1, scale: 1 }}
+            transition={{ type: "spring", damping: 20 }}
+            className="relative inline-block"
+          >
+            {/* Glow detrás de la cajera */}
+            <div className="absolute inset-0 bg-white/20 blur-[100px] rounded-full scale-110" />
+
+            {/* Imagen en Círculo Perfecto */}
+            <div className="w-[400px] h-[400px] rounded-full overflow-hidden border-[12px] border-white/10 shadow-2xl relative">
+              <Image
+                src="/images/Cajera.png"
+                alt="POS Specialist"
+                fill
+                className="object-cover scale-110" // Escala un poco para que no se vean bordes
+              />
+            </div>
+
+            {/* Badge flotante realista */}
+            <motion.div
+              animate={{ y: [0, -10, 0] }}
+              transition={{ duration: 4, repeat: Infinity, ease: "easeInOut" }}
+              className="absolute -right-6 top-10 bg-white p-4 rounded-2xl shadow-2xl border border-slate-100 flex items-center gap-3"
+            >
+              <div className="w-10 h-10 bg-emerald-100 text-emerald-600 rounded-full flex items-center justify-center font-bold">
+                ✓
+              </div>
+              <div className="text-left">
+                <p className="text-[10px] text-slate-400 font-bold uppercase">
+                  Estado Sistema
+                </p>
+                <p className="text-sm font-black text-slate-800 tracking-tight">
+                  Ventas Online
+                </p>
+              </div>
+            </motion.div>
+          </motion.div>
+
+          <div className="mt-10 space-y-2">
+            <h3 className="text-white text-4xl font-black tracking-tight drop-shadow-sm">
+              Potencia tu punto de venta
+            </h3>
+            <p className="text-blue-100/70 text-lg max-w-sm mx-auto font-medium leading-relaxed">
+              La plataforma inteligente para el crecimiento de tu negocio local.
+            </p>
+          </div>
+        </div>
+
+        {/* Decoración de borde inferior (Efecto cristal) */}
+        <div className="absolute bottom-10 left-10 right-10 p-6 bg-white/5 backdrop-blur-xl rounded-3xl border border-white/10 flex justify-between items-center text-white/50 text-xs font-bold uppercase tracking-widest">
+          <span>Server: CL-SCL-1</span>
+          <span>Uptime: 99.9%</span>
+          <span>Security: SSL Encrypted</span>
+        </div>
       </div>
     </div>
   );
