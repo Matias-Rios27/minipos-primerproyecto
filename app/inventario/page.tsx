@@ -48,7 +48,7 @@ export default function InventoryPage() {
       <main className="p-8 max-w-7xl mx-auto">
         {/* BARRA DE ACCIONES */}
         <div className="flex flex-wrap gap-4 justify-between items-center mb-8">
-          <div className="flex-1 min-w-[300px] relative">
+          <div className="flex-1 min-w-300px relative">
             <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 text-lg">🔍</span>
             <input 
               type="text" 
@@ -61,7 +61,7 @@ export default function InventoryPage() {
           </div>
 
           <div className="flex gap-3">
-            <button className="bg-[#275791] text-white px-5 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-[#1e4470] shadow-lg shadow-blue-900/10 transition-all active:scale-95">
+            <button onClick={() => router.push("/agregarproducto")} className="bg-[#275791] text-white px-5 py-3 rounded-xl font-bold flex items-center gap-2 hover:bg-[#1e4470] shadow-lg shadow-blue-900/10 transition-all active:scale-95">
               ➕ Agregar producto
             </button>
             <button className="bg-white text-[#275791] border-2 border-[#275791] px-5 py-3 rounded-xl font-bold hover:bg-blue-50 transition-all active:scale-95">
