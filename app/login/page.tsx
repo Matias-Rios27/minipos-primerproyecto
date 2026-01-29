@@ -15,7 +15,7 @@ export default function LoginPage() {
     setLoading(true);
     // Simulación de carga realista
     setTimeout(() => {
-      router.push("/main");
+      router.push("/Main");
     }, 1200);
   };
 
