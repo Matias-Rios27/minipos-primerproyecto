@@ -6,8 +6,6 @@ import { useRouter } from "next/navigation";
 
 export default function SalesHistoryPage() {
   const router = useRouter();
-  
-  // Datos de ejemplo basados en tu imagen
   const sales = [
     { 
       id: "001", 

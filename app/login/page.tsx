@@ -131,7 +131,6 @@ export default function LoginPage() {
         <div className="absolute inset-0 z-0">
           {/* Gradiente base */}
           <div className="absolute inset-0 bg-gradient-to-br from-[#275791] via-[#1e4470] to-[#162e4d]" />
-          {/* Animación de "Luces" de fondo */}
           <motion.div
             animate={{
               scale: [1, 1.2, 1],
@@ -140,14 +139,6 @@ export default function LoginPage() {
             transition={{ duration: 10, repeat: Infinity }}
             className="absolute top-[-10%] right-[-10%] w-[600px] h-[600px] bg-blue-400/20 rounded-full blur-[120px]"
           />
-          {/* PRODUCTOS */}
-          Para que el fondo sea realmente dinámico y variado, vamos a crear una
-          matriz de productos diversos (comida, bebidas, electrónica, hogar)
-          utilizando diferentes vectores. Para lograr el efecto infinito sin que
-          los productos se queden "flotando", utilizaremos la técnica de clonado
-          de lista. El contenedor se moverá verticalmente y, al ser una lista
-          doble, el usuario nunca verá el corte. Aquí tienes el código
-          actualizado con variedad de productos: TypeScript
           {/* PANEL DE PRODUCTOS VARIADOS - Movimiento Infinito Realista */}
           <div className="absolute inset-0 opacity-15 pointer-events-none flex justify-around px-4">
             {[...Array(5)].map((_, colIndex) => {
@@ -179,15 +170,14 @@ export default function LoginPage() {
                 <motion.div
                   key={colIndex}
                   initial={{ y: 0 }}
-                  animate={{ y: "-50%" }} // El truco del 50% para el loop infinito
+                  animate={{ y: "-50%" }} 
                   transition={{
-                    duration: 25 + colIndex * 3, // Diferentes velocidades por columna
+                    duration: 25 + colIndex * 3, 
                     repeat: Infinity,
                     ease: "linear",
                   }}
                   className="flex flex-col gap-16 py-8"
                 >
-                  {/* Duplicamos la lista de iconos para que no haya saltos visuales */}
                   {[...Array(20)].map((_, i) => (
                     <div
                       key={i}
@@ -223,17 +213,15 @@ export default function LoginPage() {
           >
             {/* Glow detrás de la cajera */}
             <div className="absolute inset-0 bg-white/20 blur-[100px] rounded-full scale-110" />
-
             {/* Imagen en Círculo Perfecto */}
             <div className="w-[400px] h-[400px] rounded-full overflow-hidden border-[12px] border-white/10 shadow-2xl relative">
               <Image
                 src="/images/Cajera.png"
                 alt="POS Specialist"
                 fill
-                className="object-cover scale-110" // Escala un poco para que no se vean bordes
+                className="object-cover scale-110" 
               />
             </div>
-
             {/* Badge flotante realista */}
             <motion.div
               animate={{ y: [0, -10, 0] }}
