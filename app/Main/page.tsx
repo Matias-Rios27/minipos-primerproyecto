@@ -68,7 +68,7 @@ export default function SalesPage() {
               className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-[#275791] rounded-lg hover:bg-[#1e4470] transition-all shadow-md shadow-blue-900/10 active:scale-95"
             >
               <span className="text-lg">📊</span>
-              Historial de Ventas
+              Historial
             </button>
             <button
               onClick={() => router.push("/inventario")}
@@ -76,6 +76,13 @@ export default function SalesPage() {
             >
               <span className="text-lg">📋</span>
               Inventario
+            </button>
+                        <button
+              onClick={() => router.push("/dashboard")}
+              className="flex items-center gap-2 px-4 py-2 text-sm font-bold text-white bg-[#275791] rounded-lg hover:bg-[#1e4470] transition-all shadow-md shadow-blue-900/10 active:scale-95"
+            >
+              <span className="text-lg">📈</span>
+              Dashboard
             </button>
 
             <div className="flex items-center gap-4 border-l pl-6 border-slate-200">
