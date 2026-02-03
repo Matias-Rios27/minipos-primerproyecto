@@ -3,6 +3,13 @@
 :root {
   --background: #ffffff;
   --foreground: #171717;
+  --bg-app: #F8FAFC;
+  --bg-header: rgba(255, 255, 255, 0.9);
+  --bg-card: #FFFFFF;
+  --text-main: #1E293B;
+  --text-muted: #64748B;
+  --border-color: #E2E8F0;
+  --subtle-color: #F1F5F9;
 }
 
 @theme inline {
@@ -10,6 +17,17 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+}
+
+.dark {
+  /* MODO OSCURO (Tus colores de Inventario) */
+  --bg-app: #0B1120;
+  --bg-header: rgba(17, 24, 39, 0.9);
+  --bg-card: #111827;
+  --text-main: #F1F5F9;
+  --text-muted: #94A3B8;
+  --border-color: #1E293B;
+  --subtle-color: #1F2937;
 }
 
 @media (prefers-color-scheme: dark) {
@@ -20,7 +38,7 @@
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--bg-app);
+  color: var(--text-main);
+  transition: background-color 0.3s ease, color 0.3s ease;
 }

@@ -1,161 +1,218 @@
 "use client";
 
-import { useState } from "react";
-import { motion } from "framer-motion";
+import { useState, useEffect } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 
-export default function SalesHistoryPage() {
+export default function HistorialPage() {
   const router = useRouter();
-  const sales = [
-    { 
-      id: "001", 
-      details: ["Coca cola 3L", "Coca cola 3L", "Coca cola 3L"], 
-      date: "13/01/2025 15:01", 
-      total: 6800 
-    },
-    { 
-      id: "002", 
-      details: ["Coca cola 3L", "Fanta 3L"], 
-      date: "13/01/2025 16:30", 
-      total: 4500 
-    },
-    { 
-      id: "003", 
-      details: ["Pack Galletas", "Leche entera"], 
-      date: "14/01/2025 09:15", 
-      total: 3200 
-    },
+  const [searchTerm, setSearchTerm] = useState("");
+  const [isDark, setIsDark] = useState(false);
+  const [isMounted, setIsMounted] = useState(false); // <--- NUEVO: Control de transiciones
+
+  // 1. SINCRONIZACIÓN Y PERMANENCIA
+  useEffect(() => {
+    // Sincronización inmediata con la clase del HTML
+    const isDarkMode = document.documentElement.classList.contains("dark");
+    setIsDark(isDarkMode);
+
+    // Activamos transiciones después de un pequeño delay para evitar el flash al navegar
+    const timer = setTimeout(() => setIsMounted(true), 100);
+
+    // Observer por si cambia el tema desde otra pestaña o componente
+    const observer = new MutationObserver(() => {
+      setIsDark(document.documentElement.classList.contains("dark"));
+    });
+
+    observer.observe(document.documentElement, {
+      attributes: true,
+      attributeFilter: ["class"],
+    });
+
+    return () => {
+      observer.disconnect();
+      clearTimeout(timer);
+    };
+  }, []);
+
+  const toggleDarkMode = () => {
+    const newMode = !isDark;
+    setIsDark(newMode);
+    
+    if (newMode) {
+      document.documentElement.classList.add("dark");
+      localStorage.setItem("theme", "dark");
+    } else {
+      document.documentElement.classList.remove("dark");
+      localStorage.setItem("theme", "light");
+    }
+  };
+
+  const theme = {
+    bg: isDark ? "#0B1120" : "#F8FAFC",
+    header: isDark ? "rgba(17, 24, 39, 0.9)" : "rgba(255, 255, 255, 0.9)",
+    card: isDark ? "#111827" : "#FFFFFF",
+    text: isDark ? "#F1F5F9" : "#1E293B",
+    textMuted: isDark ? "#94A3B8" : "#64748B",
+    border: isDark ? "#1E293B" : "#E2E8F0",
+    subtle: isDark ? "#1F2937" : "#F1F5F9",
+    tableRow: isDark ? "hover:bg-blue-900/10" : "hover:bg-blue-50/30"
+  };
+
+  const historialVentas = [
+    { id: "V-1024", fecha: "2026-02-02 14:30", cliente: "Publico General", total: 15500, items: 3, estado: "Completado" },
+    { id: "V-1025", fecha: "2026-02-02 15:15", cliente: "Juan Pérez", total: 8900, items: 1, estado: "Completado" },
+    { id: "V-1026", fecha: "2026-02-02 16:00", cliente: "Publico General", total: 45000, items: 12, estado: "Anulado" },
+    { id: "V-1027", fecha: "2026-02-02 16:45", cliente: "María Soto", total: 12300, items: 4, estado: "Completado" },
   ];
 
   return (
-    <div className="min-h-screen bg-slate-50 font-sans text-slate-900">
-      {/* NAVBAR MODERNO */}
-      <header className="bg-white border-b border-slate-200 px-8 py-4 flex justify-between items-center sticky top-0 z-30 shadow-sm">
+    <div 
+      className={`flex flex-col h-screen font-sans overflow-hidden ${
+        isMounted ? "transition-colors duration-500" : "transition-none"
+      }`}
+      style={{ backgroundColor: theme.bg, color: theme.text }}
+    >
+      
+      {/* HEADER SUPERIOR */}
+      <header 
+        className={`h-20 backdrop-blur-md border-b px-8 flex justify-between items-center z-30 shrink-0 ${
+          isMounted ? "transition-colors duration-500" : "transition-none"
+        }`}
+        style={{ backgroundColor: theme.header, borderColor: theme.border }}
+      >
         <div>
-          <h1 className="text-2xl font-bold text-[#275791] tracking-tight">Historial de ventas</h1>
-          <p className="text-xs font-medium text-slate-500 mt-0.5">Reporte detallado de transacciones</p>
+          <div className="flex items-center gap-3">
+            <div className="bg-[#1E3A5F] text-white p-1.5 rounded-lg font-black text-xs">MP</div>
+            <h1 className="text-lg font-bold" style={{ color: isDark ? "#FFF" : "#1E293B" }}>Gestión de Ventas</h1>
+          </div>
+          <div className="flex items-center gap-2 text-xs font-medium" style={{ color: theme.textMuted }}>
+            <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
+            Historial de Transacciones
+          </div>
         </div>
 
-        <div className="flex items-center gap-6">
-          <div className="flex gap-2">
+        <div className="flex items-center gap-3">
+          <div className={`hidden md:flex p-1 rounded-xl mr-4 border ${
+            isMounted ? "transition-colors duration-500" : "transition-none"
+          }`} style={{ backgroundColor: theme.subtle, borderColor: theme.border }}>
+            <button onClick={() => router.push("/Main")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Punto de Venta</button>
+            <button className="px-4 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm" style={isDark ? {backgroundColor: "#334155", color: "#60A5FA"} : {}}>Historial</button>
+            <button onClick={() => router.push("/inventario")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Inventario</button>
+            <button onClick={() => router.push("/dashboard")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Dashboard</button>
+          </div>
+
+          <div className="flex items-center gap-2">
             <button 
-              onClick={() => router.push("/Main")}
-              className="px-4 py-2 text-sm font-bold text-white bg-[#275791] rounded-lg hover:bg-[#1e4470] transition-all shadow-md active:scale-95"
+              onClick={toggleDarkMode}
+              className="p-2.5 rounded-xl border transition-all text-lg shadow-sm hover:scale-105 active:scale-90"
+              style={{ backgroundColor: theme.card, borderColor: theme.border }}
             >
-              🏠 Ir al Inicio
+              {isDark ? "☀️" : "🌙"}
             </button>
-            <button 
-              onClick={() => router.push("/inventario")}
-              className="px-4 py-2 text-sm font-bold text-slate-600 bg-slate-100 rounded-lg hover:bg-slate-200 transition-all border border-slate-200 flex items-center gap-2"
-            >
-              📋 Inventario
+
+            <button className="p-2.5 rounded-xl border transition-all relative active:scale-90" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
+              <span className="text-lg italic">🔔</span>
+              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2" style={{ borderColor: theme.card }}></span>
             </button>
           </div>
-          
-          <div className="flex items-center gap-4 border-l pl-6 border-slate-200">
-            <span className="text-xl cursor-pointer hover:bg-slate-100 p-2 rounded-full transition-colors">🔔</span>
-            <div className="flex items-center gap-3">
-              <div className="text-right hidden sm:block">
-                <p className="text-xs font-bold text-slate-800 uppercase leading-none">usuario</p>
-                <p className="text-[10px] text-[#275791] font-medium">Administrador</p>
-              </div>
-              <div className="w-10 h-10 bg-[#275791] rounded-full border-2 border-white shadow-md flex items-center justify-center text-white">
-                👤
-              </div>
-            </div>
-          </div>
+
+          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">MT</div>
         </div>
       </header>
 
-      <main className="p-8 max-w-7xl mx-auto">
-        {/* BARRA DE BÚSQUEDA Y FILTRO */}
-        <div className="flex gap-4 mb-8">
-          <div className="flex-1 relative group">
-            <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-400 text-lg group-focus-within:text-[#275791] transition-colors">🔍</span>
-            <input 
-              type="text" 
-              placeholder="Buscar por ID de venta o producto..." 
-              className="w-full pl-12 pr-4 py-3 bg-white border border-slate-200 rounded-xl shadow-sm focus:ring-4 focus:ring-blue-50 focus:border-[#275791] outline-none transition-all"
-            />
-          </div>
-          <button className="bg-white border border-slate-200 p-3 rounded-xl hover:bg-slate-50 transition-all shadow-sm text-slate-600 flex items-center gap-2 font-bold">
-            <span className="text-xl">⏳</span> Filtrar por Fecha
-          </button>
-        </div>
-
-        {/* TABLA DE VENTAS */}
-        <div className="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
-          <table className="w-full text-left border-collapse">
-            <thead>
-              <tr className="bg-[#275791] text-white">
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider w-16 text-center">✅</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider">ID Venta</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider">Detalle de la venta</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider">Fecha</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-center">Total</th>
-                <th className="px-6 py-4 text-xs font-bold uppercase tracking-wider text-right">Accion</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100">
-              {sales.map((sale, i) => (
-                <motion.tr 
-                  key={sale.id}
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: i * 0.1 }}
-                  className="hover:bg-slate-50/80 transition-colors"
-                >
-                  <td className="px-6 py-4 text-center">
-                    <input type="checkbox" className="w-5 h-5 accent-emerald-500 rounded border-slate-300" defaultChecked />
-                  </td>
-                  <td className="px-6 py-4 font-bold text-[#275791]">#{sale.id}</td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col gap-0.5">
-                      {sale.details.map((item, idx) => (
-                        <span key={idx} className="text-sm text-slate-700 font-medium">• {item}</span>
-                      ))}
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className="text-xs font-bold bg-slate-100 text-slate-600 px-2 py-1 rounded-md">
-                      {sale.date}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="text-lg font-bold text-emerald-600">
-                      ${sale.total.toLocaleString()}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex flex-col gap-1.5 items-end">
-                      <button className="bg-[#275791] text-white text-[10px] font-bold px-4 py-1.5 rounded-md hover:bg-emerald-600 transition-colors w-24">
-                        AGREGAR
-                      </button>
-                      <button className="bg-red-500 text-white text-[10px] font-bold px-4 py-1.5 rounded-md hover:bg-red-600 transition-colors w-24">
-                        ELIMINAR
-                      </button>
-                      <button className="bg-slate-700 text-white text-[10px] font-bold px-4 py-1.5 rounded-md hover:bg-black transition-colors w-24">
-                        IR A VER
-                      </button>
-                    </div>
-                  </td>
-                </motion.tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-
-        {/* RESUMEN RÁPIDO AL FINAL */}
-        <div className="mt-8 flex justify-end">
-          <div className="bg-[#275791] p-6 rounded-2xl text-white shadow-xl flex gap-12 items-center">
-            <div className="text-center">
-              <p className="text-xs opacity-70 uppercase font-bold tracking-widest">Ventas Hoy</p>
-              <p className="text-3xl font-black">12</p>
+      {/* CONTENIDO PRINCIPAL */}
+      <main className="flex-1 overflow-y-auto p-8">
+        <div className="max-w-7xl mx-auto">
+          
+          <div className="flex flex-col md:flex-row gap-4 mb-8">
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Buscar por ID de venta, cliente o fecha..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className={`w-full border rounded-2xl py-4 px-14 transition-all outline-none text-sm font-bold ${
+                    isMounted ? "duration-500" : ""
+                }`}
+                style={{ backgroundColor: theme.card, borderColor: theme.border, color: theme.text }}
+              />
+              <span className="absolute left-5 top-4.5 opacity-30 text-xl">🔍</span>
             </div>
-            <div className="w-px h-10 bg-white/20"></div>
-            <div className="text-center">
-              <p className="text-xs opacity-70 uppercase font-bold tracking-widest">Total Recaudado</p>
-              <p className="text-3xl font-black text-emerald-400">$14.500</p>
+            <button className="bg-[#275791] text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-blue-900/20 active:scale-95">
+              📥 Exportar Reporte
+            </button>
+          </div>
+
+          <div 
+            className={`rounded-3xl border shadow-xl overflow-hidden ${
+                isMounted ? "transition-colors duration-500" : "transition-none"
+            }`}
+            style={{ backgroundColor: theme.card, borderColor: theme.border }}
+          >
+            <table className="w-full text-left border-collapse">
+              <thead>
+                <tr style={{ backgroundColor: theme.subtle }} className={isMounted ? "transition-colors duration-500" : ""}>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>ID Transacción</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Marca de Tiempo</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Cliente</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Cant.</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Monto Total</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Estado</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center" style={{ color: theme.textMuted }}>Acciones</th>
+                </tr>
+              </thead>
+              <tbody className={`divide-y ${isMounted ? "transition-colors duration-500" : ""}`} style={{ borderColor: theme.border }}>
+                <AnimatePresence>
+                  {historialVentas.map((venta) => (
+                    <motion.tr 
+                      key={venta.id}
+                      initial={{ opacity: 0, y: 5 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      className={`transition-colors group ${theme.tableRow}`}
+                    >
+                      <td className="px-6 py-5">
+                        <span className="font-black text-blue-500 text-sm">#{venta.id}</span>
+                      </td>
+                      <td className="px-6 py-5 text-[12px] font-bold" style={{ color: theme.textMuted }}>{venta.fecha}</td>
+                      <td className="px-6 py-5 text-sm font-black uppercase tracking-tight">{venta.cliente}</td>
+                      <td className="px-6 py-5 text-sm font-bold" style={{ color: theme.textMuted }}>{venta.items} un.</td>
+                      <td className="px-6 py-5">
+                        <span className="text-sm font-black text-emerald-500">
+                          ${new Intl.NumberFormat("es-CL").format(venta.total)}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5">
+                        <span className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest ${
+                          venta.estado === 'Completado' 
+                            ? (isDark ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-600') 
+                            : (isDark ? 'bg-rose-900/30 text-rose-400' : 'bg-rose-100 text-rose-600')
+                        }`}>
+                          {venta.estado}
+                        </span>
+                      </td>
+                      <td className="px-6 py-5 text-center">
+                        <button 
+                          onClick={() => router.push("/historial/id")}
+                          className="p-2 rounded-xl border border-transparent transition-all opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-90"
+                          style={{ backgroundColor: theme.subtle, borderColor: theme.border }}
+                        >
+                          👁️‍🗨️
+                        </button>
+                      </td>
+                    </motion.tr>
+                  ))}
+                </AnimatePresence>
+              </tbody>
+            </table>
+          </div>
+          
+          {/* PAGINACIÓN */}
+          <div className="mt-8 flex justify-between items-center px-4">
+            <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: theme.textMuted }}>Sync: Quilicura_DB_v2</p>
+            <div className="flex gap-2">
+              <button className="px-6 py-2.5 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-[#1E3A5F] hover:text-white active:scale-95" style={{ backgroundColor: theme.card, borderColor: theme.border }}>Anterior</button>
+              <button className="px-6 py-2.5 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-[#1E3A5F] hover:text-white active:scale-95" style={{ backgroundColor: theme.card, borderColor: theme.border }}>Siguiente</button>
             </div>
           </div>
         </div>
