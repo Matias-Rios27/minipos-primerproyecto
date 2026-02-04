@@ -9,19 +9,23 @@ import { Producto, Alerta, CartItem } from "@/types/types";
 export default function SalesPage() {
   const router = useRouter();
   const [isDark, setIsDark] = useState(false);
-  const [isMounted, setIsMounted] = useState(false); // <--- Control de transiciones
+  const [isMounted, setIsMounted] = useState(false); 
   const [products, setProducts] = useState<Producto[]>([]);
   const [searchTerm, setSearchTerm] = useState("");
   const [alertas, setAlertas] = useState<Alerta[]>([]);
   const [showNotificaciones, setShowNotificaciones] = useState(false);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [loading, setLoading] = useState(true);
+  const [selectedCategory, setSelectedCategory] = useState("Todos los Artículos");
+  const [userName, setUserName] = useState("Usuario");
 
   const categories = [
     { name: "Todos los Artículos", active: true, icon: "grid" },
     { name: "Bebidas", icon: "🥤" },
     { name: "Alimentos", icon: "🍱" },
     { name: "Limpieza", icon: "🧼" },
+    { name: "Cuidado Personal", icon: "✨" },
+    { name: "Electronicos", icon: "💻" },
     { name: "Mascotas", icon: "🐾" },
   ];
 
@@ -37,11 +41,12 @@ export default function SalesPage() {
 
   // 1. Persistencia y Sincronización sin parpadeo
   useEffect(() => {
-    // Sincronización inmediata con el HTML (Script del Layout ya hizo su trabajo)
+    const storedUser = localStorage.getItem("user_name") || "Admin"; 
+    setUserName(storedUser);
+
     const isCurrentlyDark = document.documentElement.classList.contains("dark");
     setIsDark(isCurrentlyDark);
 
-    // Activamos las transiciones un poco después del montaje
     const timer = setTimeout(() => setIsMounted(true), 100);
 
     const observer = new MutationObserver(() => {
@@ -122,8 +127,9 @@ export default function SalesPage() {
           {categories.map((cat, i) => (
             <button
               key={i}
+              onClick={() => setSelectedCategory(cat.name)} // <--- Actualiza el estado
               className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-semibold transition-all ${
-                cat.active 
+                selectedCategory === cat.name // <--- Compara con el nombre de la categoría
                   ? "bg-[#275791] text-white shadow-lg shadow-blue-900/40" 
                   : isDark ? "text-slate-400 hover:bg-white/5" : "text-slate-600 hover:bg-slate-50"
               }`}
@@ -220,6 +226,9 @@ export default function SalesPage() {
             <button onClick={toggleDarkMode} className={`p-2.5 rounded-xl border transition-all active:scale-90 ${isDark ? "bg-white/5 border-white/10 text-yellow-400" : "bg-slate-50 border-slate-200 text-slate-600"}`}>
               {isDark ? "☀️" : "🌙"}
             </button>
+            <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shadow-sm">
+              {userName.substring(0, 2).toUpperCase()}
+            </div>
           </div>
         </header>
 
@@ -238,81 +247,100 @@ export default function SalesPage() {
               <span className="absolute left-5 top-4.5 opacity-30 text-xl">🔍</span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
+         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
               {products
-                .filter((p) => p.nombre?.toLowerCase().includes(searchTerm.toLowerCase()))
+                .filter((p) => {
+                  const isVisible = p.activo === true;
+                  const matchesSearch = p.nombre?.toLowerCase().includes(searchTerm.toLowerCase());
+                  const categoryMap: { [key: string]: number } = {
+                    "Bebidas": 1, "Alimentos": 2, "Limpieza": 3,
+                    "Cuidado Personal": 4, "Electronicos": 5, "Mascotas": 6
+                  };
+                  const matchesCategory = selectedCategory === "Todos los Artículos" || p.categoria_id === categoryMap[selectedCategory];
+                  return isVisible && matchesSearch && matchesCategory;
+                })
                 .map((product) => (
                   <motion.div
                     key={product.producto_id}
-                    whileHover={{ y: -6, shadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)" }}
-                    className={`group relative rounded-[2rem] border transition-all duration-300 overflow-hidden ${
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    whileHover={{ y: -4 }}
+                    className={`group relative flex flex-col h-full border transition-all duration-200 ${
                       isDark 
-                        ? "bg-[#111827] border-slate-800" 
-                        : "bg-white border-slate-200 shadow-sm"
-                    }`}
+                        ? "bg-[#1E293B] border-slate-700 shadow-none" 
+                        : "bg-white border-slate-200 shadow-sm hover:shadow-md"
+                    } rounded-xl overflow-hidden`}
                   >
-                    {/* BADGE DE STOCK - Visualización de disponibilidad profesional */}
-                    <div className="absolute top-4 left-4 z-10">
-                      <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg backdrop-blur-md border ${
-                        product.stock > 10 
-                          ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
-                          : "bg-rose-500/10 text-rose-500 border-rose-500/20"
-                      }`}>
-                        {product.stock > 0 ? `Stock: ${product.stock}` : "Agotado"}
-                      </span>
-                    </div>
-
-                    {/* CONTENEDOR DE IMAGEN / ICONO */}
-                    <div className={`relative h-48 flex items-center justify-center transition-colors duration-500 ${
-                      isDark ? "bg-slate-800/50" : "bg-slate-50"
+                    {/* 1. ÁREA DE IMAGEN/ICONO */}
+                    <div className={`relative aspect-square w-full flex items-center justify-center border-b ${
+                      isDark ? "bg-slate-900/50 border-slate-700" : "bg-slate-50 border-slate-100"
                     }`}>
-                      {/* Sutil degradado de fondo para realzar el objeto */}
-                      <div className="absolute inset-0 bg-gradient-to-t from-transparent to-black/5 opacity-20"></div>
-                      
-                      <span className="text-6xl group-hover:scale-110 transition-transform duration-700 ease-out z-10 drop-shadow-xl">
-                        {/* Aquí podrías poner product.imagen_url si existiera */}
-                        📦
-                      </span>
+                      {product.imagen_url ? (
+                        <img 
+                          src={product.imagen_url?.startsWith('http') 
+                            ? product.imagen_url 
+                            : `https://minipos-primerproyecto-backend.onrender.com${product.imagen_url}`
+                          } 
+                          alt={product.nombre}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                        />
+                      ) : (
+                        <div className="flex flex-col items-center opacity-20">
+                          <span className="text-6xl">📦</span>
+                          <span className="text-[10px] font-bold mt-2">SIN IMAGEN</span>
+                        </div>
+                      )}
+
+                      {/* ETIQUETA DE STOCK */}
+                      <div className="absolute top-3 right-3">
+                        <span className={`text-[9px] font-bold px-2 py-1 rounded-md border backdrop-blur-sm ${
+                          product.stock > product.stock_minimo 
+                            ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20" 
+                            : "bg-amber-500/10 text-amber-600 border-amber-500/20"
+                        }`}>
+                          {product.stock} UNID.
+                        </span>
+                      </div>
                     </div>
 
-                    {/* CUERPO DE LA CARD */}
-                    <div className="p-6">
-                      <div className="mb-1">
-                        <span className={`text-[9px] font-black uppercase tracking-[0.2em] opacity-50 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                          Cod: {String(product.producto_id).padStart(5, '0')}
+                    {/* 2. INFORMACIÓN DEL PRODUCTO */}
+                    <div className="p-4 flex flex-col flex-1">
+                      <div className="flex justify-between items-start mb-2">
+                        <span className={`text-[10px] font-bold tracking-wider uppercase opacity-60 ${isDark ? "text-blue-400" : "text-slate-500"}`}>
+                          {categories.find(c => {
+                            const categoryMap: any = { "Bebidas": 1, "Alimentos": 2, "Limpieza": 3, "Cuidado Personal": 4, "Electronicos": 5, "Mascotas": 6 };
+                            return categoryMap[c.name] === product.categoria_id;
+                          })?.name || "General"}
                         </span>
-                        <h3 className={`text-lg font-bold leading-tight line-clamp-2 mt-1 ${
-                          isDark ? "text-slate-100" : "text-slate-800"
-                        }`}>
-                          {product.nombre}
-                        </h3>
+                        <span className="text-[9px] font-mono opacity-40">#{String(product.producto_id).padStart(4, '0')}</span>
                       </div>
 
-                      <div className={`my-4 border-t border-dashed ${isDark ? "border-slate-800" : "border-slate-100"}`}></div>
+                      <h3 className={`text-sm font-bold leading-snug h-10 line-clamp-2 mb-4 ${
+                        isDark ? "text-slate-100" : "text-slate-800"
+                      }`}>
+                        {product.nombre}
+                      </h3>
 
-                      <div className="flex items-center justify-between">
+                      {/* 3. PRECIO Y ACCIÓN */}
+                      <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-500/10">
                         <div className="flex flex-col">
-                          <span className={`text-[10px] font-bold uppercase opacity-50 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
-                            Precio Unitario
-                          </span>
-                          <p className={`text-2xl font-black tracking-tighter ${
-                            isDark ? "text-blue-400" : "text-[#1E3A5F]"
-                          }`}>
+                          <span className="text-[9px] font-bold opacity-40 uppercase">Precio</span>
+                          <span className={`text-lg font-black ${isDark ? "text-white" : "text-[#1E3A5F]"}`}>
                             ${new Intl.NumberFormat("es-CL").format(product.precio)}
-                          </p>
+                          </span>
                         </div>
 
                         <motion.button
-                          whileTap={{ scale: 0.9 }}
+                          whileTap={{ scale: 0.95 }}
                           onClick={() => addToCart(product)}
-                          className={`flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
+                          className={`p-2.5 rounded-lg transition-colors ${
                             isDark 
-                              ? "bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.2)]" 
-                              : "bg-[#1E3A5F] hover:bg-slate-800 text-white shadow-lg shadow-blue-900/10"
-                          }`}
+                              ? "bg-blue-600 hover:bg-blue-500 text-white" 
+                              : "bg-[#1E3A5F] hover:bg-blue-800 text-white"
+                          } shadow-sm`}
+                          title="Añadir al carrito"
                         >
-                          Añadir
-                          <span className="text-sm">+</span>
+                          <span className="text-lg leading-none">🛒</span>
                         </motion.button>
                       </div>
                     </div>

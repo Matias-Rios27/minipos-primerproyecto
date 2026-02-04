@@ -34,6 +34,7 @@ export default function LoginPage() {
       const response = await api.post("/api/auth/login", { email, password, rememberMe });
       localStorage.setItem("token", response.data.token);
       const nombreUsuario = response.data.user?.nombre || "Usuario";
+      localStorage.setItem("user_name", nombreUsuario);
       setSuccessMsg(`Sesión iniciada: Hola, ${nombreUsuario}`);
       setTimeout(() => router.push("/Main"), 1500);
     } catch (err: any) {

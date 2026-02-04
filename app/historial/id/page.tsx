@@ -10,13 +10,16 @@ export default function DetalleVentaPage() {
   const router = useRouter();
   const [isDark, setIsDark] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  
+  const [userName, setUserName] = useState("Usuario");
   // Estados para notificaciones
   const [alertas, setAlertas] = useState<Alerta[]>([]);
   const [showNotificaciones, setShowNotificaciones] = useState(false);
 
   // 1. SINCRONIZACIÓN Y CARGA DE DATOS
   useEffect(() => {
+    const storedUser = localStorage.getItem("user_name") || "Admin"; 
+    setUserName(storedUser);
+
     const isDarkMode = document.documentElement.classList.contains("dark");
     setIsDark(isDarkMode);
 

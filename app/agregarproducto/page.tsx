@@ -3,40 +3,62 @@
 import { useState, useEffect, useRef, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { getNotificaciones } from "@/lib/api";
-import { Alerta } from "@/types/types";
+import { getNotificaciones, getCategorias, getProveedores, createProducto } from "@/lib/api";
+import { Alerta, Categoria, Proveedor } from "@/types/types";
 
 export default function AgregarProductoPage() {
   const router = useRouter();
   const [isDark, setIsDark] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [userName, setUserName] = useState("Usuario");
   
-  // ESTADOS PARA IMAGEN
+  // ESTADOS DE CARGA Y DATOS DE BD
+  const [categorias, setCategorias] = useState<Categoria[]>([]);
+  const [proveedores, setProveedores] = useState<Proveedor[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ESTADO DEL FORMULARIO (CAPTURA DE DATOS)
+  const [formData, setFormData] = useState({
+    nombre: "",
+    precio: "",
+    stock: "",
+    stock_minimo: "",
+    categoria_id: "",
+    proveedor_id: ""
+  });
+
   const [imagen, setImagen] = useState<File | null>(null);
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // ESTADOS PARA NOTIFICACIONES
   const [showNotificaciones, setShowNotificaciones] = useState(false);
   const [alertas, setAlertas] = useState<Alerta[]>([]);
   const notifRef = useRef<HTMLDivElement>(null);
 
-  // 1. SINCRONIZACIÓN Y PERMANENCIA DEL TEMA + CARGA DE DATOS
   useEffect(() => {
-    const isDarkMode = document.documentElement.classList.contains("dark");
-    setIsDark(isDarkMode);
-
-    const timer = setTimeout(() => setIsMounted(true), 100);
-
-    const loadAlerts = async () => {
+    const storedUser = localStorage.getItem("user_name") || "Admin"; 
+    setUserName(storedUser);
+    
+    // CARGAR CATEGORÍAS Y PROVEEDORES AL INICIAR
+    const fetchData = async () => {
       try {
-        const data = await getNotificaciones();
-        setAlertas(data || []);
+        const [cats, provs, alerts] = await Promise.all([
+          getCategorias(), 
+          getProveedores(), 
+          getNotificaciones()
+        ]);
+        setCategorias(cats || []);
+        setProveedores(provs || []);
+        setAlertas(alerts || []);
       } catch (e) {
-        console.error("Error cargando alertas", e);
+        console.error("Error cargando datos", e);
       }
     };
-    loadAlerts();
+    fetchData();
+
+    const isDarkMode = document.documentElement.classList.contains("dark");
+    setIsDark(isDarkMode);
+    const timer = setTimeout(() => setIsMounted(true), 100);
 
     const handleClickOutside = (event: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
@@ -45,49 +67,60 @@ export default function AgregarProductoPage() {
     };
     document.addEventListener("mousedown", handleClickOutside);
 
-    const observer = new MutationObserver(() => {
-      setIsDark(document.documentElement.classList.contains("dark"));
-    });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
-
     return () => {
-      observer.disconnect();
       clearTimeout(timer);
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
-  // MANEJADOR DE IMAGEN
+  // MANEJADORES DE INPUTS
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
       setImagen(file);
       const reader = new FileReader();
-      reader.onloadend = () => {
-        setPreview(reader.result as string);
-      };
+      reader.onloadend = () => setPreview(reader.result as string);
       reader.readAsDataURL(file);
     }
   };
 
-  const triggerFileInput = () => {
-    fileInputRef.current?.click();
+  // ENVÍO A BASE DE DATOS
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // Usamos el FormData nativo del navegador para el archivo
+      const data = new (window as any).FormData();
+      data.append("nombre", formData.nombre);
+      data.append("precio", formData.precio);
+      data.append("stock", formData.stock);
+      data.append("stock_minimo", formData.stock_minimo);
+      data.append("categoria_id", formData.categoria_id);
+      data.append("proveedor_id", formData.proveedor_id);
+      if (imagen) data.append("imagen", imagen);
+
+      await createProducto(data);
+      alert("✅ Producto guardado correctamente");
+      router.push("/inventario");
+    } catch (err) {
+      alert("❌ Error al guardar el producto");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
+
+  const triggerFileInput = () => fileInputRef.current?.click();
 
   const toggleDarkMode = () => {
     const newMode = !isDark;
     setIsDark(newMode);
-    if (newMode) {
-      document.documentElement.classList.add("dark");
-      localStorage.setItem("theme", "dark");
-    } else {
-      document.documentElement.classList.remove("dark");
-      localStorage.setItem("theme", "light");
-    }
+    document.documentElement.classList.toggle("dark", newMode);
+    localStorage.setItem("theme", newMode ? "dark" : "light");
   };
 
   const theme = {
@@ -109,7 +142,7 @@ export default function AgregarProductoPage() {
       style={{ backgroundColor: theme.bg, color: theme.text }}
     >
       
-      {/* HEADER UNIFICADO */}
+      {/* HEADER UNIFICADO (Sin cambios visuales) */}
       <header 
         className={`h-20 backdrop-blur-md border-b px-8 flex justify-between items-center z-30 shrink-0 ${isMounted ? "transition-colors duration-500" : ""}`}
         style={{ backgroundColor: theme.header, borderColor: theme.border }}
@@ -188,7 +221,10 @@ export default function AgregarProductoPage() {
               </AnimatePresence>
             </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">MT</div>
+          {/* LOGO DE USUARIO MT */}
+          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">
+            {userName.substring(0, 2).toUpperCase()}
+          </div>
         </div>
       </header>
 
@@ -218,20 +254,13 @@ export default function AgregarProductoPage() {
               </div>
             </div>
 
-            <form className="p-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+            {/* FORMULARIO CONECTADO */}
+            <form onSubmit={handleSubmit} className="p-10 grid grid-cols-1 md:grid-cols-3 gap-8">
               
-              {/* ZONA DE CARGA DE IMAGEN HABILITADA */}
+              {/* ZONA DE CARGA DE IMAGEN */}
               <div className="md:col-span-1 flex flex-col gap-4">
                 <label className={labelClass} style={{ color: theme.textMuted }}>Imagen del Producto</label>
-                
-                {/* Input oculto */}
-                <input 
-                  type="file" 
-                  ref={fileInputRef} 
-                  onChange={handleImageChange} 
-                  accept="image/*" 
-                  className="hidden" 
-                />
+                <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
 
                 <div 
                   onClick={triggerFileInput}
@@ -261,34 +290,47 @@ export default function AgregarProductoPage() {
               <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                   <label className={labelClass} style={{ color: theme.textMuted }}>Nombre Comercial</label>
-                  <input type="text" placeholder="EJ: COCA COLA ORIGINAL 1.5L" className={inputClass}
+                  <input name="nombre" required value={formData.nombre} onChange={handleInputChange} type="text" placeholder="EJ: COCA COLA ORIGINAL 1.5L" className={inputClass}
                     style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }} />
                 </div>
 
+                {/* CATEGORÍA DINÁMICA */}
+                <div>
+                  <label className={labelClass} style={{ color: theme.textMuted }}>Categoría (Relación)</label>
+                  <select name="categoria_id" required value={formData.categoria_id} onChange={handleInputChange} className={inputClass} style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }}>
+                    <option value="">Seleccionar categoría...</option>
+                    {categorias.map(cat => (
+                        <option key={cat.categoria_id} value={cat.categoria_id}>{cat.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* PROVEEDOR DINÁMICO */}
                 <div>
                   <label className={labelClass} style={{ color: theme.textMuted }}>Proveedor (Relación)</label>
-                  <select className={inputClass} style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }}>
-                    <option>Seleccionar proveedor...</option>
-                    <option>TAL TAL S.A.</option>
-                    <option>EVERCRISP</option>
+                  <select name="proveedor_id" required value={formData.proveedor_id} onChange={handleInputChange} className={inputClass} style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }}>
+                    <option value="">Seleccionar proveedor...</option>
+                    {proveedores.map(prov => (
+                        <option key={prov.proveedor_id} value={prov.proveedor_id}>{prov.nombre}</option>
+                    ))}
                   </select>
                 </div>
 
                 <div>
                   <label className={labelClass} style={{ color: theme.textMuted }}>Precio Venta ($)</label>
-                  <input type="number" placeholder="0" className={`${inputClass} text-blue-500`}
+                  <input name="precio" required value={formData.precio} onChange={handleInputChange} type="number" placeholder="0" className={`${inputClass} text-blue-500`}
                     style={{ backgroundColor: theme.subtle, borderColor: theme.border }} />
                 </div>
 
                 <div>
                   <label className={labelClass} style={{ color: theme.textMuted }}>Stock Inicial</label>
-                  <input type="number" placeholder="0" className={inputClass}
+                  <input name="stock" required value={formData.stock} onChange={handleInputChange} type="number" placeholder="0" className={inputClass}
                     style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }} />
                 </div>
 
-                <div>
+                <div className="md:col-span-2">
                   <label className={labelClass} style={{ color: theme.textMuted }}>Stock Mínimo (Alerta)</label>
-                  <input type="number" placeholder="Ej: 10" className={`${inputClass} text-rose-500`}
+                  <input name="stock_minimo" required value={formData.stock_minimo} onChange={handleInputChange} type="number" placeholder="Ej: 10" className={`${inputClass} text-rose-500`}
                     style={{ backgroundColor: theme.subtle, borderColor: theme.border }} />
                 </div>
 
@@ -302,12 +344,12 @@ export default function AgregarProductoPage() {
 
               {/* BOTONES DE ACCIÓN */}
               <div className={`md:col-span-3 pt-6 mt-6 border-t flex gap-4 ${isMounted ? "border-t transition-colors" : ""}`} style={{ borderColor: theme.border }}>
-                <button type="submit" className="flex-1 bg-[#1E3A5F] text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl shadow-blue-900/20 active:scale-[0.98]">
-                  💾 Guardar en Base de Datos
+                <button type="submit" disabled={isSubmitting} className="flex-1 bg-[#1E3A5F] text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl shadow-blue-900/20 active:scale-[0.98] disabled:opacity-50">
+                  {isSubmitting ? "⌛ Guardando..." : "💾 Guardar en Base de Datos"}
                 </button>
                 <button 
                   type="reset" 
-                  onClick={() => { setPreview(null); setImagen(null); }}
+                  onClick={() => { setPreview(null); setImagen(null); setFormData({nombre:"", precio:"", stock:"", stock_minimo:"", categoria_id:"", proveedor_id:""}); }}
                   className="px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] border transition-all active:scale-95"
                   style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.textMuted }}
                 >

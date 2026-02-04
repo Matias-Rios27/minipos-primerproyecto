@@ -9,7 +9,7 @@ export default function GestionGastosPage() {
   const [isDark, setIsDark] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
-
+  const [userName, setUserName] = useState("Usuario");
   // ESTADOS PARA NOTIFICACIONES (Siguiendo tu estilo previo)
   const [showNotificaciones, setShowNotificaciones] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
@@ -20,6 +20,9 @@ export default function GestionGastosPage() {
 
   // 1. SINCRONIZACIÓN DE TEMA Y MONTAJE
   useEffect(() => {
+    const storedUser = localStorage.getItem("user_name") || "Admin"; 
+    setUserName(storedUser);    
+
     const isDarkMode = document.documentElement.classList.contains("dark");
     setIsDark(isDarkMode);
     const timer = setTimeout(() => setIsMounted(true), 100);
@@ -166,7 +169,9 @@ export default function GestionGastosPage() {
               )}
             </AnimatePresence>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">MT</div>
+          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shadow-sm">
+            {userName.substring(0, 2).toUpperCase()}
+          </div>        
         </div>
       </header>
 

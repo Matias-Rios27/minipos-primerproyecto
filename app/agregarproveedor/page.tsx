@@ -15,6 +15,7 @@ export default function AgregarProveedorPage() {
   const router = useRouter();
   const [isDark, setIsDark] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const [userName, setUserName] = useState("Usuario");
 
   // ESTADOS PARA NOTIFICACIONES
   const [showNotificaciones, setShowNotificaciones] = useState(false);
@@ -23,6 +24,9 @@ export default function AgregarProveedorPage() {
 
   // 1. SINCRONIZACIÓN Y PERMANENCIA DEL TEMA + NOTIFICACIONES
   useEffect(() => {
+    const storedUser = localStorage.getItem("user_name") || "Admin"; 
+    setUserName(storedUser);
+
     const isDarkMode = document.documentElement.classList.contains("dark");
     setIsDark(isDarkMode);
 

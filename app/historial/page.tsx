@@ -11,13 +11,16 @@ export default function HistorialPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [isDark, setIsDark] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  
+  const [userName, setUserName] = useState("Usuario");
   // ESTADOS PARA NOTIFICACIONES
   const [alertas, setAlertas] = useState<Alerta[]>([]);
   const [showNotificaciones, setShowNotificaciones] = useState(false);
 
   // 1. SINCRONIZACIÓN Y PERMANENCIA
   useEffect(() => {
+    const storedUser = localStorage.getItem("user_name") || "Admin"; 
+    setUserName(storedUser);
+
     const isDarkMode = document.documentElement.classList.contains("dark");
     setIsDark(isDarkMode);
 
@@ -172,7 +175,9 @@ export default function HistorialPage() {
             </AnimatePresence>
           </div>
           </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">MT</div>
+          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shadow-sm">
+            {userName.substring(0, 2).toUpperCase()}
+          </div>
         </div>
       </header>
 
