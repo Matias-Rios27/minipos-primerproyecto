@@ -1,24 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { getNotificaciones } from "@/lib/api"; 
+import { motion, AnimatePresence } from "framer-motion";
+import { Alerta } from "@/types/types";
 
 export default function DetalleVentaPage() {
   const router = useRouter();
   const [isDark, setIsDark] = useState(false);
-  const [isMounted, setIsMounted] = useState(false); // <--- Control de transiciones
+  const [isMounted, setIsMounted] = useState(false);
+  
+  // Estados para notificaciones
+  const [alertas, setAlertas] = useState<Alerta[]>([]);
+  const [showNotificaciones, setShowNotificaciones] = useState(false);
 
-  // 1. SINCRONIZACIÓN Y PERMANENCIA
+  // 1. SINCRONIZACIÓN Y CARGA DE DATOS
   useEffect(() => {
-    // Sincronización inmediata con el HTML
     const isDarkMode = document.documentElement.classList.contains("dark");
     setIsDark(isDarkMode);
 
-    // Activamos transiciones después de un breve delay
     const timer = setTimeout(() => setIsMounted(true), 100);
 
-    // Observer para cambios externos
     const observer = new MutationObserver(() => {
       setIsDark(document.documentElement.classList.contains("dark"));
     });
@@ -27,6 +30,16 @@ export default function DetalleVentaPage() {
       attributes: true,
       attributeFilter: ["class"],
     });
+
+    const loadAlerts = async () => {
+      try {
+        const data = await getNotificaciones();
+        setAlertas(data || []);
+      } catch (e) {
+        console.error("Error cargando alertas", e);
+      }
+    };
+    loadAlerts();
 
     return () => {
       observer.disconnect();
@@ -37,7 +50,6 @@ export default function DetalleVentaPage() {
   const toggleDarkMode = () => {
     const newMode = !isDark;
     setIsDark(newMode);
-    
     if (newMode) {
       document.documentElement.classList.add("dark");
       localStorage.setItem("theme", "dark");
@@ -47,36 +59,31 @@ export default function DetalleVentaPage() {
     }
   };
 
-  // PALETA DINÁMICA
-  const theme = {
+  const theme = useMemo(() => ({
     bg: isDark ? "#0B1120" : "#F8FAFC",
     header: isDark ? "rgba(17, 24, 39, 0.9)" : "rgba(255, 255, 255, 0.9)",
     card: isDark ? "#111827" : "#FFFFFF",
     text: isDark ? "#F1F5F9" : "#1E293B",
     textMuted: isDark ? "#94A3B8" : "#64748B",
     border: isDark ? "#1E293B" : "#E2E8F0",
-    subtle: isDark ? "#1F2937" : "#F8FAFC",
-  };
+    subtle: isDark ? "#1F2937" : "#F1F5F9",
+  }), [isDark]);
 
   return (
     <div 
-      className={`flex flex-col h-screen font-sans overflow-hidden ${
-        isMounted ? "transition-colors duration-500" : "transition-none"
-      }`}
+      className={`flex flex-col h-screen font-sans overflow-hidden ${isMounted ? "transition-colors duration-500" : ""}`}
       style={{ backgroundColor: theme.bg, color: theme.text }}
     >
       
       {/* HEADER SUPERIOR */}
       <header 
-        className={`h-20 backdrop-blur-md border-b px-8 flex justify-between items-center z-30 shrink-0 ${
-          isMounted ? "transition-colors duration-500" : "transition-none"
-        }`}
+        className="h-20 backdrop-blur-md border-b px-8 flex justify-between items-center z-30 shrink-0"
         style={{ backgroundColor: theme.header, borderColor: theme.border }}
       >
         <div>
           <div className="flex items-center gap-3">
             <div className="bg-[#1E3A5F] text-white p-1.5 rounded-lg font-black text-xs">MP</div>
-            <h1 className="text-lg font-bold" style={{ color: isDark ? "#FFF" : "#1E293B" }}>Detalle de Operación</h1>
+            <h1 className="text-lg font-bold">Detalle de Operación</h1>
           </div>
           <div className="flex items-center gap-2 text-xs font-medium" style={{ color: theme.textMuted }}>
             <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
@@ -85,29 +92,73 @@ export default function DetalleVentaPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className={`hidden md:flex p-1 rounded-xl mr-4 border ${
-            isMounted ? "transition-colors duration-500" : "transition-none"
-          }`} style={{ backgroundColor: theme.subtle, borderColor: theme.border }}>
+          <div className="hidden md:flex p-1 rounded-xl mr-4 border" style={{ backgroundColor: theme.subtle, borderColor: theme.border }}>
             <button onClick={() => router.push("/Main")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Punto de Venta</button>
             <button onClick={() => router.push("/historial")} className="px-4 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm" style={isDark ? {backgroundColor: "#334155", color: "#60A5FA"} : {}}>Historial</button>
             <button onClick={() => router.push("/inventario")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Inventario</button>
             <button onClick={() => router.push("/dashboard")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Dashboard</button>
           </div>
 
-          <button 
-            onClick={toggleDarkMode}
-            className="p-2.5 rounded-xl border transition-all text-lg shadow-sm hover:scale-105 active:scale-90"
-            style={{ backgroundColor: theme.card, borderColor: theme.border }}
-          >
+          <button onClick={toggleDarkMode} className="p-2.5 rounded-xl border transition-all text-lg shadow-sm active:scale-90" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
             {isDark ? "☀️" : "🌙"}
           </button>
+
+          {/* BOTÓN Y DROPDOWN NOTIFICACIONES */}
+          <div className="relative">
+            <button 
+              onClick={() => setShowNotificaciones(!showNotificaciones)}
+              className="p-2.5 rounded-xl border transition-all relative active:scale-90 hover:bg-slate-500/5" 
+              style={{ backgroundColor: theme.card, borderColor: theme.border }}
+            >
+              <span className="text-lg italic">🔔</span>
+              {alertas.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[10px] text-white rounded-full flex items-center justify-center font-bold border-2 border-white dark:border-[#111827]">
+                  {alertas.length}
+                </span>
+              )}
+            </button>
+
+            <AnimatePresence>
+              {showNotificaciones && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 mt-2 w-80 rounded-3xl border shadow-2xl z-50 overflow-hidden"
+                  style={{ backgroundColor: theme.card, borderColor: theme.border }}
+                >
+                  <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: theme.border, backgroundColor: theme.subtle }}>
+                    <h3 className="text-xs font-black uppercase tracking-widest">Alertas Recientes</h3>
+                    <span className="px-2 py-0.5 rounded-full bg-rose-500 text-[10px] text-white font-bold">{alertas.length}</span>
+                  </div>
+                  <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                    {alertas.length > 0 ? (
+                      alertas.map((alerta) => (
+                        <div key={alerta.notificacion_id} className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors" style={{ borderColor: theme.border }}>
+                          <div className="flex gap-3 text-xs">
+                            <span className="text-lg">{alerta.tipo === 'stock' ? '📉' : '⚠️'}</span>
+                            <div>
+                              <p className="font-bold">{alerta.mensaje}</p>
+                              <p className="opacity-50 mt-1">Revisar stock en Inventario</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-10 text-center opacity-40 text-xs font-bold">Sin alertas pendientes</div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           
           <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">MT</div>
         </div>
       </header>
 
       {/* CONTENIDO PRINCIPAL */}
-      <main className="flex-1 overflow-y-auto p-8">
+      <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
         <div className="max-w-7xl mx-auto">
           
           {/* BOTÓN VOLVER Y ACCIONES */}
@@ -134,13 +185,11 @@ export default function DetalleVentaPage() {
 
           {/* TARJETA PRINCIPAL DE DETALLE */}
           <div 
-            className={`rounded-[32px] border shadow-2xl overflow-hidden flex flex-col lg:flex-row min-h-[550px] ${
-              isMounted ? "transition-colors duration-500" : "transition-none"
-            }`}
+            className="rounded-[32px] border shadow-2xl overflow-hidden flex flex-col lg:flex-row min-h-[550px]"
             style={{ backgroundColor: theme.card, borderColor: theme.border }}
           >
             
-            {/* 1. INFO LATERAL (IZQUIERDA) - Siempre Oscura */}
+            {/* 1. INFO LATERAL (IZQUIERDA) */}
             <div className="w-full lg:w-80 bg-[#1E3A5F] p-10 flex flex-col justify-between text-white">
               <div className="space-y-10">
                 <div>
@@ -161,7 +210,7 @@ export default function DetalleVentaPage() {
               </div>
 
               <div className="pt-10 space-y-3">
-                <button onClick={() => router.push("/editarventa")} className="w-full bg-blue-500 text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest hover:bg-blue-400 transition-all shadow-lg shadow-blue-900/20 active:scale-95">
+                <button onClick={() => router.push("/editarventa")} className="w-full bg-blue-500 text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest hover:bg-blue-400 transition-all shadow-lg active:scale-95">
                   EDITAR REGISTRO
                 </button>
                 <button className="w-full bg-rose-500/10 text-rose-400 border border-rose-500/20 font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all active:scale-95">
@@ -171,7 +220,7 @@ export default function DetalleVentaPage() {
             </div>
 
             {/* 2. LISTADO DE PRODUCTOS (CENTRO) */}
-            <div className={`flex-1 p-10 ${isMounted ? "transition-colors duration-500" : ""}`} style={{ backgroundColor: theme.card }}>
+            <div className="flex-1 p-10" style={{ backgroundColor: theme.card }}>
               <div className="flex items-center justify-between mb-8 border-b pb-4" style={{ borderColor: theme.border }}>
                 <h4 className="text-[10px] font-black uppercase tracking-widest" style={{ color: theme.textMuted }}>Artículos Vendidos</h4>
                 <span className="px-3 py-1 rounded-full text-[10px] font-bold" style={{ backgroundColor: theme.subtle, color: theme.textMuted }}>3 items</span>
@@ -182,7 +231,7 @@ export default function DetalleVentaPage() {
                   <motion.div 
                     key={item}
                     whileHover={{ x: 5 }} 
-                    className={`border rounded-2xl p-4 flex items-center justify-between group ${isMounted ? "transition-all duration-500" : ""}`}
+                    className="border rounded-2xl p-4 flex items-center justify-between group"
                     style={{ backgroundColor: theme.subtle, borderColor: theme.border }}
                   >
                     <div className="flex items-center gap-5">
@@ -211,29 +260,24 @@ export default function DetalleVentaPage() {
             </div>
 
             {/* 3. TOTALES (DERECHA) */}
-            <div className={`w-full lg:w-80 p-10 border-l flex flex-col justify-between ${isMounted ? "transition-colors duration-500" : ""}`} 
+            <div className="w-full lg:w-80 p-10 border-l flex flex-col justify-between" 
               style={{ backgroundColor: isDark ? "#0F172A" : "#F8FAFC", borderColor: theme.border }}>
               <div>
                 <h4 className="font-black text-[10px] uppercase tracking-widest mb-8 pb-4 border-b" style={{ color: theme.textMuted, borderColor: theme.border }}>Resumen de Pago</h4>
-                
                 <div className="space-y-5">
                   <div className="flex justify-between text-sm font-bold" style={{ color: theme.textMuted }}>
                     <span>Sub-Total</span>
                     <span style={{ color: theme.text }}>$5.400</span>
                   </div>
-                  <div className="flex justify-between text-sm font-bold" style={{ color: theme.textMuted }}>
-                    <span>IVA (19%)</span>
-                    <span style={{ color: theme.text }}>Incluido</span>
-                  </div>
                   <div className="flex justify-between text-[10px] font-black p-3 rounded-xl uppercase tracking-widest" style={{ backgroundColor: isDark ? "#064E3B" : "#ECFDF5", color: "#10B981" }}>
-                    <span>Descuento Aplicado</span>
+                    <span>Descuento</span>
                     <span>-$0</span>
                   </div>
                 </div>
               </div>
 
               <div className="pt-8 mt-8 border-t" style={{ borderColor: theme.border }}>
-                <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: theme.textMuted }}>Monto Final Percibido</p>
+                <p className="text-[10px] font-black uppercase tracking-widest mb-1" style={{ color: theme.textMuted }}>Monto Final</p>
                 <div className="flex items-baseline gap-1">
                   <span className="text-xl font-bold text-blue-500">$</span>
                   <h3 className="text-5xl font-black tracking-tighter italic" style={{ color: isDark ? "#FFF" : "#1E3A5F" }}>5.400</h3>

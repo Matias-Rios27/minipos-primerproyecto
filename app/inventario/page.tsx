@@ -1,14 +1,20 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { getNotificaciones } from "@/lib/api"; // Importar API
+import { Alerta } from "@/types/types"; // Importar Tipo
 
 export default function InventoryPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [isDark, setIsDark] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  
+  // --- NUEVOS ESTADOS PARA NOTIFICACIONES ---
+  const [alertas, setAlertas] = useState<Alerta[]>([]);
+  const [showNotificaciones, setShowNotificaciones] = useState(false);
 
   // 1. SINCRONIZACIÓN Y PERMANENCIA
   useEffect(() => {
@@ -25,6 +31,17 @@ export default function InventoryPage() {
       attributes: true,
       attributeFilter: ["class"],
     });
+
+    // Carga de notificaciones al montar
+    const loadAlerts = async () => {
+      try {
+        const data = await getNotificaciones();
+        setAlertas(data || []);
+      } catch (e) {
+        console.error("Error cargando alertas", e);
+      }
+    };
+    loadAlerts();
 
     return () => {
       observer.disconnect();
@@ -45,8 +62,8 @@ export default function InventoryPage() {
     }
   };
 
-  // PALETA DINÁMICA
-  const theme = {
+  // PALETA DINÁMICA (Envuelta en useMemo para optimizar)
+  const theme = useMemo(() => ({
     bg: isDark ? "#0B1120" : "#F8FAFC",
     header: isDark ? "rgba(17, 24, 39, 0.9)" : "rgba(255, 255, 255, 0.9)",
     card: isDark ? "#111827" : "#FFFFFF",
@@ -55,13 +72,18 @@ export default function InventoryPage() {
     border: isDark ? "#1E293B" : "#E2E8F0",
     subtle: isDark ? "#1F2937" : "#F1F5F9",
     tableRow: isDark ? "hover:bg-blue-900/10" : "hover:bg-blue-50/30"
-  };
+  }), [isDark]);
 
   const products = [
     { id: 1, name: "Coca cola 3L", category: "Bebidas", price: 1800, cost: 1500, stock: 45, provider: "TAL TAL" },
     { id: 2, name: "Papas Fritas XL", category: "Alimentos", price: 2500, cost: 1800, stock: 12, provider: "Evercrisp" },
     { id: 3, name: "Detergente 3kg", category: "Limpieza", price: 8900, cost: 6200, stock: 5, provider: "Unilever" },
   ];
+
+  const filteredProducts = products.filter(p => 
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.provider.toLowerCase().includes(searchTerm.toLowerCase())
+  );
 
   return (
     <div 
@@ -81,7 +103,7 @@ export default function InventoryPage() {
         <div>
           <div className="flex items-center gap-3">
             <div className="bg-[#1E3A5F] text-white p-1.5 rounded-lg font-black text-xs">MP</div>
-            <h1 className="text-lg font-bold" style={{ color: isDark ? "#FFF" : "#1E293B" }}>Gestión de Inventario</h1>
+            <h1 className="text-lg font-bold">Gestión de Inventario</h1>
           </div>
           <div className="flex items-center gap-2 text-xs font-medium" style={{ color: theme.textMuted }}>
             <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
@@ -108,10 +130,56 @@ export default function InventoryPage() {
               {isDark ? "☀️" : "🌙"}
             </button>
 
-            <button className="p-2.5 rounded-xl border transition-all relative active:scale-90" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
+            {/* --- BOTÓN Y DROPDOWN DE NOTIFICACIONES --- */}
+             {/* BOTÓN Y DROPDOWN NOTIFICACIONES */}
+          <div className="relative">
+            <button 
+              onClick={() => setShowNotificaciones(!showNotificaciones)}
+              className="p-2.5 rounded-xl border transition-all relative active:scale-90 hover:bg-slate-500/5" 
+              style={{ backgroundColor: theme.card, borderColor: theme.border }}
+            >
               <span className="text-lg italic">🔔</span>
-              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2" style={{ borderColor: theme.card }}></span>
+              {alertas.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[10px] text-white rounded-full flex items-center justify-center font-bold border-2 border-white dark:border-[#111827]">
+                  {alertas.length}
+                </span>
+              )}
             </button>
+
+            <AnimatePresence>
+              {showNotificaciones && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 mt-2 w-80 rounded-3xl border shadow-2xl z-50 overflow-hidden"
+                  style={{ backgroundColor: theme.card, borderColor: theme.border }}
+                >
+                  <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: theme.border, backgroundColor: theme.subtle }}>
+                    <h3 className="text-xs font-black uppercase tracking-widest">Alertas Recientes</h3>
+                    <span className="px-2 py-0.5 rounded-full bg-rose-500 text-[10px] text-white font-bold">{alertas.length}</span>
+                  </div>
+                  <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                    {alertas.length > 0 ? (
+                      alertas.map((alerta) => (
+                        <div key={alerta.notificacion_id} className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors" style={{ borderColor: theme.border }}>
+                          <div className="flex gap-3 text-xs">
+                            <span className="text-lg">{alerta.tipo === 'stock' ? '📉' : '⚠️'}</span>
+                            <div>
+                              <p className="font-bold">{alerta.mensaje}</p>
+                              <p className="opacity-50 mt-1">Revisar stock en Inventario</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-10 text-center opacity-40 text-xs font-bold">Sin alertas pendientes</div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           </div>
 
           <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">MT</div>
@@ -176,7 +244,7 @@ export default function InventoryPage() {
               </thead>
               <tbody className={`divide-y ${isMounted ? "transition-colors duration-500" : ""}`} style={{ borderColor: theme.border }}>
                 <AnimatePresence>
-                  {products.map((p) => (
+                  {filteredProducts.map((p) => (
                     <motion.tr 
                       key={p.id}
                       initial={{ opacity: 0 }}

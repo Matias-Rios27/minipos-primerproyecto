@@ -1,16 +1,22 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { getNotificaciones } from "@/lib/api";
+import { Alerta } from "@/types/types";
 
 export default function ProvidersPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [isDark, setIsDark] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  
+  // Estados para notificaciones
+  const [alertas, setAlertas] = useState<Alerta[]>([]);
+  const [showNotificaciones, setShowNotificaciones] = useState(false);
 
-  // 1. SINCRONIZACIÓN Y PERMANENCIA (Igual a Inventario)
+  // 1. SINCRONIZACIÓN Y PERMANENCIA DEL TEMA
   useEffect(() => {
     const isDarkMode = document.documentElement.classList.contains("dark");
     setIsDark(isDarkMode);
@@ -25,6 +31,17 @@ export default function ProvidersPage() {
       attributes: true,
       attributeFilter: ["class"],
     });
+
+    // Carga de notificaciones reales
+    const loadAlerts = async () => {
+      try {
+        const data = await getNotificaciones();
+        setAlertas(data || []);
+      } catch (e) {
+        console.error("Error cargando alertas", e);
+      }
+    };
+    loadAlerts();
 
     return () => {
       observer.disconnect();
@@ -45,7 +62,7 @@ export default function ProvidersPage() {
   };
 
   // PALETA DINÁMICA CORPORATIVA
-  const theme = {
+  const theme = useMemo(() => ({
     bg: isDark ? "#0B1120" : "#F8FAFC",
     header: isDark ? "rgba(17, 24, 39, 0.9)" : "rgba(255, 255, 255, 0.9)",
     card: isDark ? "#111827" : "#FFFFFF",
@@ -54,7 +71,7 @@ export default function ProvidersPage() {
     border: isDark ? "#1E293B" : "#E2E8F0",
     subtle: isDark ? "#1F2937" : "#F1F5F9",
     tableRow: isDark ? "hover:bg-blue-900/10" : "hover:bg-blue-50/30"
-  };
+  }), [isDark]);
 
   const providers = [
     { id: 1, name: "TAL TAL", contact: "Juan Pérez", phone: "+56 9 1234 5678", email: "ventas@taltal.cl", category: "Bebidas", rating: 4.8 },
@@ -63,13 +80,20 @@ export default function ProvidersPage() {
     { id: 4, name: "CCU Chile", contact: "Ana Dornell", phone: "+56 9 8877 6655", email: "contacto@ccu.cl", category: "Bebidas", rating: 4.2 },
   ];
 
+  // Filtrado de búsqueda
+  const filteredProviders = providers.filter(p => 
+    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    p.contact.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div 
       className={`flex flex-col h-screen font-sans overflow-hidden ${isMounted ? "transition-colors duration-500" : "transition-none"}`}
       style={{ backgroundColor: theme.bg, color: theme.text }}
     >
       
-      {/* HEADER SUPERIOR (Mismo que Inventario) */}
+      {/* HEADER SUPERIOR */}
       <header 
         className={`h-20 backdrop-blur-md border-b px-8 flex justify-between items-center z-30 shrink-0 ${isMounted ? "transition-colors duration-500" : "transition-none"}`}
         style={{ backgroundColor: theme.header, borderColor: theme.border }}
@@ -89,7 +113,7 @@ export default function ProvidersPage() {
           <div className={`hidden md:flex p-1 rounded-xl mr-4 border ${isMounted ? "transition-colors duration-500" : ""}`} style={{ backgroundColor: theme.subtle, borderColor: theme.border }}>
             <button onClick={() => router.push("/Main")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Punto de Venta</button>
             <button onClick={() => router.push("/historial")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Historial</button>
-            <button onClick={() => router.push("/Inventario")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Inventario</button>
+            <button onClick={() => router.push("/inventario")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Inventario</button>
             <button className="px-4 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm" style={isDark ? {backgroundColor: "#334155", color: "#60A5FA"} : {}}>Proveedores</button>
           </div>
 
@@ -97,9 +121,57 @@ export default function ProvidersPage() {
             <button onClick={toggleDarkMode} className="p-2.5 rounded-xl border transition-all text-lg shadow-sm hover:scale-105" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
               {isDark ? "☀️" : "🌙"}
             </button>
-            <button className="p-2.5 rounded-xl border transition-all relative" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
+
+            {/* BOTÓN Y DROPDOWN DE NOTIFICACIONES */}
+              {/* BOTÓN Y DROPDOWN NOTIFICACIONES */}
+          <div className="relative">
+            <button 
+              onClick={() => setShowNotificaciones(!showNotificaciones)}
+              className="p-2.5 rounded-xl border transition-all relative active:scale-90 hover:bg-slate-500/5" 
+              style={{ backgroundColor: theme.card, borderColor: theme.border }}
+            >
               <span className="text-lg italic">🔔</span>
+              {alertas.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[10px] text-white rounded-full flex items-center justify-center font-bold border-2 border-white dark:border-[#111827]">
+                  {alertas.length}
+                </span>
+              )}
             </button>
+
+            <AnimatePresence>
+              {showNotificaciones && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 mt-2 w-80 rounded-3xl border shadow-2xl z-50 overflow-hidden"
+                  style={{ backgroundColor: theme.card, borderColor: theme.border }}
+                >
+                  <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: theme.border, backgroundColor: theme.subtle }}>
+                    <h3 className="text-xs font-black uppercase tracking-widest">Alertas Recientes</h3>
+                    <span className="px-2 py-0.5 rounded-full bg-rose-500 text-[10px] text-white font-bold">{alertas.length}</span>
+                  </div>
+                  <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                    {alertas.length > 0 ? (
+                      alertas.map((alerta) => (
+                        <div key={alerta.notificacion_id} className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors" style={{ borderColor: theme.border }}>
+                          <div className="flex gap-3 text-xs">
+                            <span className="text-lg">{alerta.tipo === 'stock' ? '📉' : '⚠️'}</span>
+                            <div>
+                              <p className="font-bold">{alerta.mensaje}</p>
+                              <p className="opacity-50 mt-1">Revisar stock en Inventario</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-10 text-center opacity-40 text-xs font-bold">Sin alertas pendientes</div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">MT</div>
         </div>
@@ -117,7 +189,7 @@ export default function ProvidersPage() {
                 placeholder="Buscar proveedor por nombre, categoría o contacto..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full border rounded-2xl py-4 px-14 outline-none text-sm font-medium"
+                className="w-full border rounded-2xl py-4 px-14 outline-none text-sm font-medium transition-all focus:ring-2 focus:ring-blue-500/20"
                 style={{ backgroundColor: theme.card, borderColor: theme.border, color: theme.text }}
               />
               <span className="absolute left-5 top-4.5 opacity-30 text-xl">🔍</span>
@@ -149,7 +221,7 @@ export default function ProvidersPage() {
               </thead>
               <tbody className="divide-y" style={{ borderColor: theme.border }}>
                 <AnimatePresence>
-                  {providers.map((p) => (
+                  {filteredProviders.map((p) => (
                     <motion.tr 
                       key={p.id}
                       initial={{ opacity: 0, y: 10 }}

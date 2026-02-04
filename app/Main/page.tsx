@@ -25,6 +25,16 @@ export default function SalesPage() {
     { name: "Mascotas", icon: "🐾" },
   ];
 
+  const theme = {
+      bg: isDark ? "#0B1120" : "#F8FAFC",
+      header: isDark ? "rgba(17, 24, 39, 0.9)" : "rgba(255, 255, 255, 0.9)",
+      card: isDark ? "#111827" : "#FFFFFF",
+      text: isDark ? "#F1F5F9" : "#1E293B",
+      textMuted: isDark ? "#94A3B8" : "#64748B",
+      border: isDark ? "#1E293B" : "#E2E8F0",
+      subtle: isDark ? "#1F2937" : "#F1F5F9",
+    };
+
   // 1. Persistencia y Sincronización sin parpadeo
   useEffect(() => {
     // Sincronización inmediata con el HTML (Script del Layout ya hizo su trabajo)
@@ -146,8 +156,8 @@ export default function SalesPage() {
               Terminal Activa • Quilicura_POS_01
             </div>
           </div>
-
           <div className="flex items-center gap-3">
+            {/* Botones de Navegación */}
             <div className={`hidden md:flex p-1 rounded-xl border ${isDark ? "bg-white/5 border-white/10" : "bg-slate-100 border-slate-200"}`}>
               <button className="px-4 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm" style={isDark ? {backgroundColor: "#334155", color: "#60A5FA"} : {}}>Punto de Venta</button>
               <button onClick={() => router.push("/historial")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Historial</button>
@@ -155,17 +165,58 @@ export default function SalesPage() {
               <button onClick={() => router.push("/dashboard")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Dashboard</button>
             </div>
 
+            {/* CONTENEDOR DE NOTIFICACIONES */}
+             {/* BOTÓN Y DROPDOWN NOTIFICACIONES */}
+          <div className="relative">
             <button 
-                onClick={() => setShowNotificaciones(!showNotificaciones)} 
-                className={`p-2.5 rounded-xl border relative transition-all active:scale-90 ${isDark ? "bg-white/5 border-white/10" : "bg-slate-50 border-slate-200"}`}>
-                <span className="text-lg">🔔</span>
-                {alertas.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[10px] text-white rounded-full flex items-center justify-center font-bold">
-                    {alertas.length}
-                  </span>
-                )}
+              onClick={() => setShowNotificaciones(!showNotificaciones)}
+              className="p-2.5 rounded-xl border transition-all relative active:scale-90 hover:bg-slate-500/5" 
+              style={{ backgroundColor: theme.card, borderColor: theme.border }}
+            >
+              <span className="text-lg italic">🔔</span>
+              {alertas.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[10px] text-white rounded-full flex items-center justify-center font-bold border-2 border-white dark:border-[#111827]">
+                  {alertas.length}
+                </span>
+              )}
             </button>
 
+            <AnimatePresence>
+              {showNotificaciones && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 mt-2 w-80 rounded-3xl border shadow-2xl z-50 overflow-hidden"
+                  style={{ backgroundColor: theme.card, borderColor: theme.border }}
+                >
+                  <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: theme.border, backgroundColor: theme.subtle }}>
+                    <h3 className="text-xs font-black uppercase tracking-widest">Alertas Recientes</h3>
+                    <span className="px-2 py-0.5 rounded-full bg-rose-500 text-[10px] text-white font-bold">{alertas.length}</span>
+                  </div>
+                  <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                    {alertas.length > 0 ? (
+                      alertas.map((alerta) => (
+                        <div key={alerta.notificacion_id} className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors" style={{ borderColor: theme.border }}>
+                          <div className="flex gap-3 text-xs">
+                            <span className="text-lg">{alerta.tipo === 'stock' ? '📉' : '⚠️'}</span>
+                            <div>
+                              <p className="font-bold">{alerta.mensaje}</p>
+                              <p className="opacity-50 mt-1">Revisar stock en Inventario</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-10 text-center opacity-40 text-xs font-bold">Sin alertas pendientes</div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+            {/* Botón Dark Mode */}
             <button onClick={toggleDarkMode} className={`p-2.5 rounded-xl border transition-all active:scale-90 ${isDark ? "bg-white/5 border-white/10 text-yellow-400" : "bg-slate-50 border-slate-200 text-slate-600"}`}>
               {isDark ? "☀️" : "🌙"}
             </button>
@@ -188,31 +239,85 @@ export default function SalesPage() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 2xl:grid-cols-4 gap-6">
-              {products.filter(p => p.nombre?.toLowerCase().includes(searchTerm.toLowerCase())).map((product) => (
-                <motion.div 
-                  key={product.producto_id} 
-                  whileHover={{ y: -5 }}
-                  className={`group rounded-3xl border p-2 hover:shadow-2xl transition-all duration-300 ${isDark ? "bg-[#111827] border-white/5" : "bg-white border-slate-200"}`}
-                >
-                  <div className={`relative h-44 rounded-[22px] mb-4 flex items-center justify-center ${isDark ? "bg-white/5" : "bg-slate-50"}`}>
-                    <span className="text-5xl group-hover:scale-110 transition-transform duration-500">📦</span>
-                  </div>
-                  <div className="px-4 pb-4">
-                    <h3 className={`font-bold line-clamp-1 ${isDark ? "text-white" : "text-slate-800"}`}>{product.nombre}</h3>
-                    <div className="flex items-center justify-between mt-4">
-                      <p className={`text-2xl font-black ${isDark ? "text-blue-400" : "text-slate-900"}`}>
-                        ${new Intl.NumberFormat("es-CL").format(product.precio)}
-                      </p>
-                      <button
-                        onClick={() => addToCart(product)}
-                        className="bg-[#275791] text-white w-10 h-10 rounded-xl flex items-center justify-center hover:scale-110 transition-all shadow-lg text-xl"
-                      >
-                        +
-                      </button>
+              {products
+                .filter((p) => p.nombre?.toLowerCase().includes(searchTerm.toLowerCase()))
+                .map((product) => (
+                  <motion.div
+                    key={product.producto_id}
+                    whileHover={{ y: -6, shadow: "0 20px 25px -5px rgb(0 0 0 / 0.1)" }}
+                    className={`group relative rounded-[2rem] border transition-all duration-300 overflow-hidden ${
+                      isDark 
+                        ? "bg-[#111827] border-slate-800" 
+                        : "bg-white border-slate-200 shadow-sm"
+                    }`}
+                  >
+                    {/* BADGE DE STOCK - Visualización de disponibilidad profesional */}
+                    <div className="absolute top-4 left-4 z-10">
+                      <span className={`text-[10px] font-black uppercase tracking-widest px-3 py-1 rounded-lg backdrop-blur-md border ${
+                        product.stock > 10 
+                          ? "bg-emerald-500/10 text-emerald-500 border-emerald-500/20" 
+                          : "bg-rose-500/10 text-rose-500 border-rose-500/20"
+                      }`}>
+                        {product.stock > 0 ? `Stock: ${product.stock}` : "Agotado"}
+                      </span>
                     </div>
-                  </div>
-                </motion.div>
-              ))}
+
+                    {/* CONTENEDOR DE IMAGEN / ICONO */}
+                    <div className={`relative h-48 flex items-center justify-center transition-colors duration-500 ${
+                      isDark ? "bg-slate-800/50" : "bg-slate-50"
+                    }`}>
+                      {/* Sutil degradado de fondo para realzar el objeto */}
+                      <div className="absolute inset-0 bg-gradient-to-t from-transparent to-black/5 opacity-20"></div>
+                      
+                      <span className="text-6xl group-hover:scale-110 transition-transform duration-700 ease-out z-10 drop-shadow-xl">
+                        {/* Aquí podrías poner product.imagen_url si existiera */}
+                        📦
+                      </span>
+                    </div>
+
+                    {/* CUERPO DE LA CARD */}
+                    <div className="p-6">
+                      <div className="mb-1">
+                        <span className={`text-[9px] font-black uppercase tracking-[0.2em] opacity-50 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                          Cod: {String(product.producto_id).padStart(5, '0')}
+                        </span>
+                        <h3 className={`text-lg font-bold leading-tight line-clamp-2 mt-1 ${
+                          isDark ? "text-slate-100" : "text-slate-800"
+                        }`}>
+                          {product.nombre}
+                        </h3>
+                      </div>
+
+                      <div className={`my-4 border-t border-dashed ${isDark ? "border-slate-800" : "border-slate-100"}`}></div>
+
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <span className={`text-[10px] font-bold uppercase opacity-50 ${isDark ? "text-slate-400" : "text-slate-500"}`}>
+                            Precio Unitario
+                          </span>
+                          <p className={`text-2xl font-black tracking-tighter ${
+                            isDark ? "text-blue-400" : "text-[#1E3A5F]"
+                          }`}>
+                            ${new Intl.NumberFormat("es-CL").format(product.precio)}
+                          </p>
+                        </div>
+
+                        <motion.button
+                          whileTap={{ scale: 0.9 }}
+                          onClick={() => addToCart(product)}
+                          className={`flex items-center justify-center gap-2 px-4 py-3 rounded-2xl font-black text-[10px] uppercase tracking-widest transition-all ${
+                            isDark 
+                              ? "bg-blue-600 hover:bg-blue-500 text-white shadow-[0_0_20px_rgba(37,99,235,0.2)]" 
+                              : "bg-[#1E3A5F] hover:bg-slate-800 text-white shadow-lg shadow-blue-900/10"
+                          }`}
+                        >
+                          Añadir
+                          <span className="text-sm">+</span>
+                        </motion.button>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
             </div>
           </div>
         </div>

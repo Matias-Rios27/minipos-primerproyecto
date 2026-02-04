@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react"; // Añadido useRef
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -10,11 +10,27 @@ export default function GestionGastosPage() {
   const [isMounted, setIsMounted] = useState(false);
   const [searchTerm, setSearchTerm] = useState("");
 
+  // ESTADOS PARA NOTIFICACIONES (Siguiendo tu estilo previo)
+  const [showNotificaciones, setShowNotificaciones] = useState(false);
+  const notifRef = useRef<HTMLDivElement>(null);
+  const [alertas, setAlertas] = useState([
+    { id: 1, mensaje: "Stock Crítico: Coca-Cola Sin Azúcar", tipo: "stock" },
+    { id: 2, mensaje: "Gasto Pendiente: Pago Arriendo vence mañana", tipo: "gasto" },
+  ]);
+
   // 1. SINCRONIZACIÓN DE TEMA Y MONTAJE
   useEffect(() => {
     const isDarkMode = document.documentElement.classList.contains("dark");
     setIsDark(isDarkMode);
     const timer = setTimeout(() => setIsMounted(true), 100);
+
+    // Cerrar al hacer clic fuera
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setShowNotificaciones(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
 
     const observer = new MutationObserver(() => {
       setIsDark(document.documentElement.classList.contains("dark"));
@@ -28,6 +44,7 @@ export default function GestionGastosPage() {
     return () => {
       observer.disconnect();
       clearTimeout(timer);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -53,7 +70,6 @@ export default function GestionGastosPage() {
     subtle: isDark ? "#1F2937" : "#F1F5F9",
   };
 
-  // Mock de datos basado en tus tablas
   const gastos = [
     { id: 1, categoria: "Servicios", desc: "Cuenta de Agua - Enero", fecha: "2026-01-14", monto: 54482, estado: "Pagado" },
     { id: 2, categoria: "Abastecimiento", desc: "Proveedor Bebidas S.A.", fecha: "2026-02-01", monto: 210500, estado: "Pendiente" },
@@ -82,23 +98,73 @@ export default function GestionGastosPage() {
           </div>
         </div>
 
-       <div className="flex items-center gap-3">
-        <div className={`hidden md:flex p-1 rounded-xl mr-4 border transition-colors ${isMounted ? "duration-500" : ""}`} 
-          style={{ backgroundColor: theme.subtle, borderColor: theme.border }}>
-            <button onClick={() => router.push("/Main")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Punto de Venta</button>
-            <button onClick={() => router.push("/historial")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Historial</button>
-            <button onClick={() => router.push("/inventario")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Inventario</button>
-            <button className="px-4 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm" style={isDark ? {backgroundColor: "#334155", color: "#60A5FA"} : {}}>Dashboard</button>
-        </div>
+        <div className="flex items-center gap-3">
+          <div className={`hidden md:flex p-1 rounded-xl mr-4 border transition-colors ${isMounted ? "duration-500" : ""}`} 
+            style={{ backgroundColor: theme.subtle, borderColor: theme.border }}>
+              <button onClick={() => router.push("/Main")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Punto de Venta</button>
+              <button onClick={() => router.push("/historial")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Historial</button>
+              <button onClick={() => router.push("/inventario")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Inventario</button>
+              <button className="px-4 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm" style={isDark ? {backgroundColor: "#334155", color: "#60A5FA"} : {}}>Dashboard</button>
+          </div>
 
-        <div className="flex items-center gap-2">
-          <button onClick={toggleDarkMode} className="p-2.5 rounded-xl border transition-all text-lg shadow-sm active:scale-90" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
-            {isDark ? "☀️" : "🌙"}
+          <div className="flex items-center gap-2 relative" ref={notifRef}>
+            <button onClick={toggleDarkMode} className="p-2.5 rounded-xl border transition-all text-lg shadow-sm active:scale-90" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
+              {isDark ? "☀️" : "🌙"}
             </button>
-              <button className="p-2.5 rounded-xl border transition-all relative active:scale-90" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
-                <span className="text-lg italic">🔔</span>
-                <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2" style={{ borderColor: theme.card }}></span>
-              </button>
+            
+            {/* BOTÓN DE NOTIFICACIONES */}
+            <button 
+              onClick={() => setShowNotificaciones(!showNotificaciones)}
+              className="p-2.5 rounded-xl border transition-all relative active:scale-90" 
+              style={{ backgroundColor: theme.card, borderColor: theme.border }}
+            >
+              <span className="text-lg italic">🔔</span>
+              {alertas.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[10px] text-white rounded-full flex items-center justify-center font-bold border-2 border-white dark:border-[#111827]">
+                  {alertas.length}
+                </span>
+              )}
+            </button>
+
+            {/* PANEL DE NOTIFICACIONES (DENTRO DEL DROPDOWN) */}
+            <AnimatePresence>
+              {showNotificaciones && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 top-full mt-2 w-80 rounded-3xl border shadow-2xl z-50 overflow-hidden"
+                  style={{ backgroundColor: theme.card, borderColor: theme.border }}
+                >
+                  <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: theme.border, backgroundColor: theme.subtle }}>
+                    <h3 className="text-xs font-black uppercase tracking-widest" style={{ color: theme.text }}>Alertas Recientes</h3>
+                    <span className="px-2 py-0.5 rounded-full bg-rose-500 text-[10px] text-white font-bold">
+                      {alertas.length} Avisos
+                    </span>
+                  </div>
+
+                  <div className="max-h-[350px] overflow-y-auto">
+                    {alertas.length > 0 ? (
+                      alertas.map((alerta) => (
+                        <div key={alerta.id} className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors" style={{ borderColor: theme.border }}>
+                          <div className="flex gap-3">
+                            <span className="text-lg">{alerta.tipo === 'stock' ? '📉' : '⚠️'}</span>
+                            <div>
+                              <p className="text-xs font-bold leading-tight" style={{ color: theme.text }}>{alerta.mensaje}</p>
+                              <p className="text-[10px] opacity-50 mt-1 font-medium" style={{ color: theme.textMuted }}>Verificar ahora</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-10 text-center opacity-40 text-xs font-bold" style={{ color: theme.text }}>
+                        No hay alertas pendientes
+                      </div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
           </div>
           <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">MT</div>
         </div>
@@ -132,10 +198,8 @@ export default function GestionGastosPage() {
             </div>
           </div>
 
-          {/* TABLA DE GASTOS ESTILO CORPORATIVO */}
+          {/* TABLA DE GASTOS */}
           <div className="rounded-[32px] border overflow-hidden shadow-sm transition-colors duration-500" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
-            
-            {/* ENCABEZADO */}
             <div className="grid grid-cols-12 px-8 py-5 border-b text-[10px] font-black uppercase tracking-[0.2em]" 
                  style={{ backgroundColor: isDark ? "#1F2937" : "#F1F5F9", borderColor: theme.border, color: theme.textMuted }}>
               <div className="col-span-2">Categoría</div>
@@ -145,7 +209,6 @@ export default function GestionGastosPage() {
               <div className="col-span-2 text-right">Acciones</div>
             </div>
 
-            {/* FILAS DINÁMICAS */}
             <div className="divide-y" style={{ borderColor: theme.border }}>
               <AnimatePresence>
                 {gastos.map((gasto, idx) => (

@@ -1,13 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+
+// Interfaz para el tipado de alertas
+interface Alerta {
+  notificacion_id: number;
+  tipo: 'stock' | 'vencimiento';
+  mensaje: string;
+}
 
 export default function EditarProveedorPage() {
   const router = useRouter();
   const [isDark, setIsDark] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+
+  // ESTADOS PARA NOTIFICACIONES
+  const [showNotificaciones, setShowNotificaciones] = useState(false);
+  const [alertas, setAlertas] = useState<Alerta[]>([]);
+  const notifRef = useRef<HTMLDivElement>(null);
 
   // 1. SINCRONIZACIÓN Y PERMANENCIA DEL TEMA
   useEffect(() => {
@@ -15,6 +27,14 @@ export default function EditarProveedorPage() {
     setIsDark(isDarkMode);
 
     const timer = setTimeout(() => setIsMounted(true), 100);
+
+    // Cerrar notificaciones al hacer clic fuera
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setShowNotificaciones(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
 
     const observer = new MutationObserver(() => {
       setIsDark(document.documentElement.classList.contains("dark"));
@@ -28,6 +48,7 @@ export default function EditarProveedorPage() {
     return () => {
       observer.disconnect();
       clearTimeout(timer);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -62,7 +83,7 @@ export default function EditarProveedorPage() {
       style={{ backgroundColor: theme.bg, color: theme.text }}
     >
       
-      {/* HEADER - MANTENIDO IGUAL AL PANEL DE CONTROL */}
+      {/* HEADER */}
       <header 
         className={`h-20 backdrop-blur-md border-b px-8 flex justify-between items-center z-30 shrink-0 ${isMounted ? "transition-colors duration-500" : ""}`}
         style={{ backgroundColor: theme.header, borderColor: theme.border }}
@@ -87,14 +108,61 @@ export default function EditarProveedorPage() {
             <button className="px-4 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm" style={isDark ? {backgroundColor: "#334155", color: "#60A5FA"} : {}}>Dashboard</button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" ref={notifRef}>
             <button onClick={toggleDarkMode} className="p-2.5 rounded-xl border transition-all text-lg shadow-sm active:scale-90" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
               {isDark ? "☀️" : "🌙"}
             </button>
-            <button className="p-2.5 rounded-xl border transition-all relative active:scale-90" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
-              <span className="text-lg italic">🔔</span>
-              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2" style={{ borderColor: theme.card }}></span>
-            </button>
+
+            {/* SISTEMA DE NOTIFICACIONES INCORPORADO */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotificaciones(!showNotificaciones)}
+                className="p-2.5 rounded-xl border transition-all relative active:scale-90 hover:bg-slate-500/5" 
+                style={{ backgroundColor: theme.card, borderColor: theme.border }}
+              >
+                <span className="text-lg italic">🔔</span>
+                {alertas.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[10px] text-white rounded-full flex items-center justify-center font-bold border-2 border-white dark:border-[#111827]">
+                    {alertas.length}
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {showNotificaciones && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-2 w-80 rounded-3xl border shadow-2xl z-50 overflow-hidden"
+                    style={{ backgroundColor: theme.card, borderColor: theme.border }}
+                  >
+                    <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: theme.border, backgroundColor: theme.subtle }}>
+                      <h3 className="text-xs font-black uppercase tracking-widest">Alertas Recientes</h3>
+                      <span className="px-2 py-0.5 rounded-full bg-rose-500 text-[10px] text-white font-bold">{alertas.length}</span>
+                    </div>
+                    <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                      {alertas.length > 0 ? (
+                        alertas.map((alerta) => (
+                          <div key={alerta.notificacion_id} className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors" style={{ borderColor: theme.border }}>
+                            <div className="flex gap-3 text-xs">
+                              <span className="text-lg">{alerta.tipo === 'stock' ? '📉' : '⚠️'}</span>
+                              <div>
+                                <p className="font-bold">{alerta.mensaje}</p>
+                                <p className="opacity-50 mt-1 uppercase text-[9px]">Ver detalles en inventario</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-10 text-center opacity-40 text-xs font-bold uppercase tracking-tighter">Sin alertas pendientes</div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+
           </div>
           <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">MT</div>
         </div>

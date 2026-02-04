@@ -1,21 +1,49 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { getNotificaciones } from "@/lib/api";
+import { Alerta } from "@/types/types";
 
 export default function AgregarProductoPage() {
   const router = useRouter();
   const [isDark, setIsDark] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [showNotificaciones, setShowNotificaciones] = useState(false);
+  
+  // ESTADOS PARA IMAGEN
+  const [imagen, setImagen] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // 1. SINCRONIZACIÓN Y PERMANENCIA DEL TEMA
+  // ESTADOS PARA NOTIFICACIONES
+  const [showNotificaciones, setShowNotificaciones] = useState(false);
+  const [alertas, setAlertas] = useState<Alerta[]>([]);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  // 1. SINCRONIZACIÓN Y PERMANENCIA DEL TEMA + CARGA DE DATOS
   useEffect(() => {
     const isDarkMode = document.documentElement.classList.contains("dark");
     setIsDark(isDarkMode);
 
     const timer = setTimeout(() => setIsMounted(true), 100);
+
+    const loadAlerts = async () => {
+      try {
+        const data = await getNotificaciones();
+        setAlertas(data || []);
+      } catch (e) {
+        console.error("Error cargando alertas", e);
+      }
+    };
+    loadAlerts();
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setShowNotificaciones(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
 
     const observer = new MutationObserver(() => {
       setIsDark(document.documentElement.classList.contains("dark"));
@@ -29,8 +57,26 @@ export default function AgregarProductoPage() {
     return () => {
       observer.disconnect();
       clearTimeout(timer);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // MANEJADOR DE IMAGEN
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      setImagen(file);
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setPreview(reader.result as string);
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
+  const triggerFileInput = () => {
+    fileInputRef.current?.click();
+  };
 
   const toggleDarkMode = () => {
     const newMode = !isDark;
@@ -59,17 +105,13 @@ export default function AgregarProductoPage() {
 
   return (
     <div 
-      className={`flex flex-col h-screen font-sans overflow-hidden ${
-        isMounted ? "transition-colors duration-500" : "transition-none"
-      }`}
+      className={`flex flex-col h-screen font-sans overflow-hidden ${isMounted ? "transition-colors duration-500" : "transition-none"}`}
       style={{ backgroundColor: theme.bg, color: theme.text }}
     >
       
       {/* HEADER UNIFICADO */}
       <header 
-        className={`h-20 backdrop-blur-md border-b px-8 flex justify-between items-center z-30 shrink-0 ${
-          isMounted ? "transition-colors duration-500" : "transition-none"
-        }`}
+        className={`h-20 backdrop-blur-md border-b px-8 flex justify-between items-center z-30 shrink-0 ${isMounted ? "transition-colors duration-500" : ""}`}
         style={{ backgroundColor: theme.header, borderColor: theme.border }}
       >
         <div>
@@ -92,14 +134,59 @@ export default function AgregarProductoPage() {
             <button onClick={() => router.push("/dashboard")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Dashboard</button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" ref={notifRef}>
             <button onClick={toggleDarkMode} className="p-2.5 rounded-xl border transition-all text-lg shadow-sm active:scale-90" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
               {isDark ? "☀️" : "🌙"}
             </button>
-            <button className="p-2.5 rounded-xl border transition-all relative active:scale-90" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
-              <span className="text-lg italic">🔔</span>
-              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2" style={{ borderColor: theme.card }}></span>
-            </button>
+
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotificaciones(!showNotificaciones)}
+                className="p-2.5 rounded-xl border transition-all relative active:scale-90 hover:bg-slate-500/5" 
+                style={{ backgroundColor: theme.card, borderColor: theme.border }}
+              >
+                <span className="text-lg italic">🔔</span>
+                {alertas.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[10px] text-white rounded-full flex items-center justify-center font-bold border-2 border-white dark:border-[#111827]">
+                    {alertas.length}
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {showNotificaciones && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-2 w-80 rounded-3xl border shadow-2xl z-50 overflow-hidden"
+                    style={{ backgroundColor: theme.card, borderColor: theme.border }}
+                  >
+                    <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: theme.border, backgroundColor: theme.subtle }}>
+                      <h3 className="text-xs font-black uppercase tracking-widest">Alertas Recientes</h3>
+                      <span className="px-2 py-0.5 rounded-full bg-rose-500 text-[10px] text-white font-bold">{alertas.length}</span>
+                    </div>
+                    <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                      {alertas.length > 0 ? (
+                        alertas.map((alerta) => (
+                          <div key={alerta.notificacion_id} className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors" style={{ borderColor: theme.border }}>
+                            <div className="flex gap-3 text-xs">
+                              <span className="text-lg">{alerta.tipo === 'stock' ? '📉' : '⚠️'}</span>
+                              <div>
+                                <p className="font-bold">{alerta.mensaje}</p>
+                                <p className="opacity-50 mt-1">Revisar stock en Inventario</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-10 text-center opacity-40 text-xs font-bold">Sin alertas pendientes</div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">MT</div>
         </div>
@@ -133,18 +220,40 @@ export default function AgregarProductoPage() {
 
             <form className="p-10 grid grid-cols-1 md:grid-cols-3 gap-8">
               
-              {/* ZONA DE CARGA DE IMAGEN */}
+              {/* ZONA DE CARGA DE IMAGEN HABILITADA */}
               <div className="md:col-span-1 flex flex-col gap-4">
                 <label className={labelClass} style={{ color: theme.textMuted }}>Imagen del Producto</label>
+                
+                {/* Input oculto */}
+                <input 
+                  type="file" 
+                  ref={fileInputRef} 
+                  onChange={handleImageChange} 
+                  accept="image/*" 
+                  className="hidden" 
+                />
+
                 <div 
-                  className={`aspect-square rounded-3xl border-2 border-dashed flex flex-col items-center justify-center p-4 transition-all hover:border-blue-500/50 group cursor-pointer ${isMounted ? "transition-colors" : ""}`}
+                  onClick={triggerFileInput}
+                  className={`aspect-square rounded-3xl border-2 border-dashed flex flex-col items-center justify-center p-4 transition-all hover:border-blue-500/50 group cursor-pointer overflow-hidden ${isMounted ? "transition-colors" : ""}`}
                   style={{ borderColor: theme.border, backgroundColor: theme.subtle }}
                 >
-                  <span className="text-4xl mb-4 group-hover:scale-110 transition-transform">📸</span>
-                  <p className="text-[10px] font-black uppercase text-center opacity-40 px-4">Arrastra o selecciona la imagen del producto</p>
+                  {preview ? (
+                    <img src={preview} alt="Vista previa" className="w-full h-full object-cover rounded-2xl" />
+                  ) : (
+                    <>
+                      <span className="text-4xl mb-4 group-hover:scale-110 transition-transform">📸</span>
+                      <p className="text-[10px] font-black uppercase text-center opacity-40 px-4">Arrastra o selecciona la imagen del producto</p>
+                    </>
+                  )}
                 </div>
-                <button type="button" className="w-full py-3 bg-blue-600 text-white text-[10px] font-black uppercase text-center rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-95 transition-all">
-                  Cargar Imagen
+                
+                <button 
+                  type="button" 
+                  onClick={triggerFileInput}
+                  className="w-full py-3 bg-blue-600 text-white text-[10px] font-black uppercase text-center rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
+                >
+                  {preview ? "Cambiar Imagen" : "Cargar Imagen"}
                 </button>
               </div>
 
@@ -196,8 +305,12 @@ export default function AgregarProductoPage() {
                 <button type="submit" className="flex-1 bg-[#1E3A5F] text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl shadow-blue-900/20 active:scale-[0.98]">
                   💾 Guardar en Base de Datos
                 </button>
-                <button type="reset" className="px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] border transition-all active:scale-95"
-                  style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.textMuted }}>
+                <button 
+                  type="reset" 
+                  onClick={() => { setPreview(null); setImagen(null); }}
+                  className="px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] border transition-all active:scale-95"
+                  style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.textMuted }}
+                >
                   Limpiar
                 </button>
               </div>

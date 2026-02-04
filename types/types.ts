@@ -1,5 +1,5 @@
 // Define esto fuera de tu componente
-interface Producto {
+export interface Producto {
   producto_id: number;
   nombre: string;
   precio: number;
@@ -8,15 +8,15 @@ interface Producto {
   imagen_url?: string;
 }
 
-interface Alerta {
+export interface Alerta {
   notificacion_id: number;
   tipo: string;
   mensaje: string;
 }
 
-interface CartItem {
+export interface CartItem {
   producto_id: number;
   nombre: string;
-  cantidad: number;  // Antes tenías 'qty'
-  precio: number;    // Antes tenías 'price'
+  cantidad: number;  
+  precio: number;    
 }

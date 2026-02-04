@@ -1,25 +1,28 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
+import { getNotificaciones } from "@/lib/api"; // Asegúrate de tener este helper
+import { Alerta } from "@/types/types";
 
 export default function HistorialPage() {
   const router = useRouter();
   const [searchTerm, setSearchTerm] = useState("");
   const [isDark, setIsDark] = useState(false);
-  const [isMounted, setIsMounted] = useState(false); // <--- NUEVO: Control de transiciones
+  const [isMounted, setIsMounted] = useState(false);
+  
+  // ESTADOS PARA NOTIFICACIONES
+  const [alertas, setAlertas] = useState<Alerta[]>([]);
+  const [showNotificaciones, setShowNotificaciones] = useState(false);
 
   // 1. SINCRONIZACIÓN Y PERMANENCIA
   useEffect(() => {
-    // Sincronización inmediata con la clase del HTML
     const isDarkMode = document.documentElement.classList.contains("dark");
     setIsDark(isDarkMode);
 
-    // Activamos transiciones después de un pequeño delay para evitar el flash al navegar
     const timer = setTimeout(() => setIsMounted(true), 100);
 
-    // Observer por si cambia el tema desde otra pestaña o componente
     const observer = new MutationObserver(() => {
       setIsDark(document.documentElement.classList.contains("dark"));
     });
@@ -28,6 +31,17 @@ export default function HistorialPage() {
       attributes: true,
       attributeFilter: ["class"],
     });
+
+    // Carga inicial de alertas
+    const loadAlerts = async () => {
+      try {
+        const data = await getNotificaciones();
+        setAlertas(data || []);
+      } catch (e) {
+        console.error("Error cargando alertas", e);
+      }
+    };
+    loadAlerts();
 
     return () => {
       observer.disconnect();
@@ -48,7 +62,8 @@ export default function HistorialPage() {
     }
   };
 
-  const theme = {
+  // PALETA DINÁMICA
+  const theme = useMemo(() => ({
     bg: isDark ? "#0B1120" : "#F8FAFC",
     header: isDark ? "rgba(17, 24, 39, 0.9)" : "rgba(255, 255, 255, 0.9)",
     card: isDark ? "#111827" : "#FFFFFF",
@@ -57,7 +72,7 @@ export default function HistorialPage() {
     border: isDark ? "#1E293B" : "#E2E8F0",
     subtle: isDark ? "#1F2937" : "#F1F5F9",
     tableRow: isDark ? "hover:bg-blue-900/10" : "hover:bg-blue-50/30"
-  };
+  }), [isDark]);
 
   const historialVentas = [
     { id: "V-1024", fecha: "2026-02-02 14:30", cliente: "Publico General", total: 15500, items: 3, estado: "Completado" },
@@ -66,25 +81,26 @@ export default function HistorialPage() {
     { id: "V-1027", fecha: "2026-02-02 16:45", cliente: "María Soto", total: 12300, items: 4, estado: "Completado" },
   ];
 
+  const filteredVentas = historialVentas.filter(venta => 
+    venta.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    venta.cliente.toLowerCase().includes(searchTerm.toLowerCase())
+  );
+
   return (
     <div 
-      className={`flex flex-col h-screen font-sans overflow-hidden ${
-        isMounted ? "transition-colors duration-500" : "transition-none"
-      }`}
+      className={`flex flex-col h-screen font-sans overflow-hidden ${isMounted ? "transition-colors duration-500" : "transition-none"}`}
       style={{ backgroundColor: theme.bg, color: theme.text }}
     >
       
       {/* HEADER SUPERIOR */}
       <header 
-        className={`h-20 backdrop-blur-md border-b px-8 flex justify-between items-center z-30 shrink-0 ${
-          isMounted ? "transition-colors duration-500" : "transition-none"
-        }`}
+        className={`h-20 backdrop-blur-md border-b px-8 flex justify-between items-center z-30 shrink-0 ${isMounted ? "transition-colors duration-500" : "transition-none"}`}
         style={{ backgroundColor: theme.header, borderColor: theme.border }}
       >
         <div>
           <div className="flex items-center gap-3">
             <div className="bg-[#1E3A5F] text-white p-1.5 rounded-lg font-black text-xs">MP</div>
-            <h1 className="text-lg font-bold" style={{ color: isDark ? "#FFF" : "#1E293B" }}>Gestión de Ventas</h1>
+            <h1 className="text-lg font-bold">Gestión de Ventas</h1>
           </div>
           <div className="flex items-center gap-2 text-xs font-medium" style={{ color: theme.textMuted }}>
             <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
@@ -93,9 +109,7 @@ export default function HistorialPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className={`hidden md:flex p-1 rounded-xl mr-4 border ${
-            isMounted ? "transition-colors duration-500" : "transition-none"
-          }`} style={{ backgroundColor: theme.subtle, borderColor: theme.border }}>
+          <div className={`hidden md:flex p-1 rounded-xl mr-4 border ${isMounted ? "transition-colors duration-500" : ""}`} style={{ backgroundColor: theme.subtle, borderColor: theme.border }}>
             <button onClick={() => router.push("/Main")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Punto de Venta</button>
             <button className="px-4 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm" style={isDark ? {backgroundColor: "#334155", color: "#60A5FA"} : {}}>Historial</button>
             <button onClick={() => router.push("/inventario")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Inventario</button>
@@ -103,20 +117,61 @@ export default function HistorialPage() {
           </div>
 
           <div className="flex items-center gap-2">
-            <button 
-              onClick={toggleDarkMode}
-              className="p-2.5 rounded-xl border transition-all text-lg shadow-sm hover:scale-105 active:scale-90"
-              style={{ backgroundColor: theme.card, borderColor: theme.border }}
-            >
+            <button onClick={toggleDarkMode} className="p-2.5 rounded-xl border transition-all text-lg shadow-sm hover:scale-105" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
               {isDark ? "☀️" : "🌙"}
             </button>
 
-            <button className="p-2.5 rounded-xl border transition-all relative active:scale-90" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
+            {/* DROPDOWN NOTIFICACIONES */}
+              {/* BOTÓN Y DROPDOWN NOTIFICACIONES */}
+          <div className="relative">
+            <button 
+              onClick={() => setShowNotificaciones(!showNotificaciones)}
+              className="p-2.5 rounded-xl border transition-all relative active:scale-90 hover:bg-slate-500/5" 
+              style={{ backgroundColor: theme.card, borderColor: theme.border }}
+            >
               <span className="text-lg italic">🔔</span>
-              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2" style={{ borderColor: theme.card }}></span>
+              {alertas.length > 0 && (
+                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[10px] text-white rounded-full flex items-center justify-center font-bold border-2 border-white dark:border-[#111827]">
+                  {alertas.length}
+                </span>
+              )}
             </button>
-          </div>
 
+            <AnimatePresence>
+              {showNotificaciones && (
+                <motion.div
+                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                  animate={{ opacity: 1, y: 0, scale: 1 }}
+                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                  className="absolute right-0 mt-2 w-80 rounded-3xl border shadow-2xl z-50 overflow-hidden"
+                  style={{ backgroundColor: theme.card, borderColor: theme.border }}
+                >
+                  <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: theme.border, backgroundColor: theme.subtle }}>
+                    <h3 className="text-xs font-black uppercase tracking-widest">Alertas Recientes</h3>
+                    <span className="px-2 py-0.5 rounded-full bg-rose-500 text-[10px] text-white font-bold">{alertas.length}</span>
+                  </div>
+                  <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                    {alertas.length > 0 ? (
+                      alertas.map((alerta) => (
+                        <div key={alerta.notificacion_id} className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors" style={{ borderColor: theme.border }}>
+                          <div className="flex gap-3 text-xs">
+                            <span className="text-lg">{alerta.tipo === 'stock' ? '📉' : '⚠️'}</span>
+                            <div>
+                              <p className="font-bold">{alerta.mensaje}</p>
+                              <p className="opacity-50 mt-1">Revisar stock en Inventario</p>
+                            </div>
+                          </div>
+                        </div>
+                      ))
+                    ) : (
+                      <div className="p-10 text-center opacity-40 text-xs font-bold">Sin alertas pendientes</div>
+                    )}
+                  </div>
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+          </div>
           <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">MT</div>
         </div>
       </header>
@@ -132,27 +187,23 @@ export default function HistorialPage() {
                 placeholder="Buscar por ID de venta, cliente o fecha..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className={`w-full border rounded-2xl py-4 px-14 transition-all outline-none text-sm font-bold ${
-                    isMounted ? "duration-500" : ""
-                }`}
+                className="w-full border rounded-2xl py-4 px-14 outline-none text-sm font-bold"
                 style={{ backgroundColor: theme.card, borderColor: theme.border, color: theme.text }}
               />
               <span className="absolute left-5 top-4.5 opacity-30 text-xl">🔍</span>
             </div>
-            <button className="bg-[#275791] text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg shadow-blue-900/20 active:scale-95">
+            <button className="bg-[#275791] text-white px-8 py-4 rounded-2xl font-black text-xs uppercase tracking-widest hover:bg-slate-800 transition-all shadow-lg active:scale-95">
               📥 Exportar Reporte
             </button>
           </div>
 
           <div 
-            className={`rounded-3xl border shadow-xl overflow-hidden ${
-                isMounted ? "transition-colors duration-500" : "transition-none"
-            }`}
+            className="rounded-3xl border shadow-xl overflow-hidden"
             style={{ backgroundColor: theme.card, borderColor: theme.border }}
           >
             <table className="w-full text-left border-collapse">
               <thead>
-                <tr style={{ backgroundColor: theme.subtle }} className={isMounted ? "transition-colors duration-500" : ""}>
+                <tr style={{ backgroundColor: theme.subtle }}>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>ID Transacción</th>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Marca de Tiempo</th>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Cliente</th>
@@ -162,9 +213,9 @@ export default function HistorialPage() {
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center" style={{ color: theme.textMuted }}>Acciones</th>
                 </tr>
               </thead>
-              <tbody className={`divide-y ${isMounted ? "transition-colors duration-500" : ""}`} style={{ borderColor: theme.border }}>
+              <tbody className="divide-y" style={{ borderColor: theme.border }}>
                 <AnimatePresence>
-                  {historialVentas.map((venta) => (
+                  {filteredVentas.map((venta) => (
                     <motion.tr 
                       key={venta.id}
                       initial={{ opacity: 0, y: 5 }}
@@ -211,8 +262,8 @@ export default function HistorialPage() {
           <div className="mt-8 flex justify-between items-center px-4">
             <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: theme.textMuted }}>Sync: Quilicura_DB_v2</p>
             <div className="flex gap-2">
-              <button className="px-6 py-2.5 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-[#1E3A5F] hover:text-white active:scale-95" style={{ backgroundColor: theme.card, borderColor: theme.border }}>Anterior</button>
-              <button className="px-6 py-2.5 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-[#1E3A5F] hover:text-white active:scale-95" style={{ backgroundColor: theme.card, borderColor: theme.border }}>Siguiente</button>
+              <button className="px-6 py-2.5 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-[#1E3A5F] hover:text-white" style={{ backgroundColor: theme.card, borderColor: theme.border }}>Anterior</button>
+              <button className="px-6 py-2.5 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-[#1E3A5F] hover:text-white" style={{ backgroundColor: theme.card, borderColor: theme.border }}>Siguiente</button>
             </div>
           </div>
         </div>

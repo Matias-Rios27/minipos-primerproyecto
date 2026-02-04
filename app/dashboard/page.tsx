@@ -1,22 +1,45 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { getNotificaciones } from "@/lib/api";
+import { Alerta } from "@/types/types";
 
 export default function DashboardPage() {
   const router = useRouter();
   const [isDark, setIsDark] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
-  const [showNotificaciones, setShowNotificaciones] = useState(false);
   const [periodo, setPeriodo] = useState("Semana");
 
-  // 1. SINCRONIZACIÓN Y PERSISTENCIA (Montaje Seguro)
+  // ESTADOS PARA NOTIFICACIONES
+  const [showNotificaciones, setShowNotificaciones] = useState(false);
+  const [alertas, setAlertas] = useState<Alerta[]>([]);
+  const notifRef = useRef<HTMLDivElement>(null);
+
+  // 1. SINCRONIZACIÓN DE TEMA Y CARGA DE DATOS
   useEffect(() => {
     const isDarkMode = document.documentElement.classList.contains("dark");
     setIsDark(isDarkMode);
 
     const timer = setTimeout(() => setIsMounted(true), 100);
+
+    const loadAlerts = async () => {
+      try {
+        const data = await getNotificaciones();
+        setAlertas(data || []);
+      } catch (e) {
+        console.error("Error cargando alertas", e);
+      }
+    };
+    loadAlerts();
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
+        setShowNotificaciones(false);
+      }
+    };
+    document.addEventListener("mousedown", handleClickOutside);
 
     const observer = new MutationObserver(() => {
       setIsDark(document.documentElement.classList.contains("dark"));
@@ -30,6 +53,7 @@ export default function DashboardPage() {
     return () => {
       observer.disconnect();
       clearTimeout(timer);
+      document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
 
@@ -86,14 +110,60 @@ export default function DashboardPage() {
             <button className="px-4 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm" style={isDark ? {backgroundColor: "#334155", color: "#60A5FA"} : {}}>Dashboard</button>
           </div>
 
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-2" ref={notifRef}>
             <button onClick={toggleDarkMode} className="p-2.5 rounded-xl border transition-all text-lg shadow-sm active:scale-90" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
               {isDark ? "☀️" : "🌙"}
             </button>
-            <button className="p-2.5 rounded-xl border transition-all relative active:scale-90" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
-              <span className="text-lg italic">🔔</span>
-              <span className="absolute top-2 right-2 w-2 h-2 bg-rose-500 rounded-full border-2" style={{ borderColor: theme.card }}></span>
-            </button>
+
+            {/* CONTENEDOR DE NOTIFICACIONES */}
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotificaciones(!showNotificaciones)}
+                className="p-2.5 rounded-xl border transition-all relative active:scale-90 hover:bg-slate-500/5" 
+                style={{ backgroundColor: theme.card, borderColor: theme.border }}
+              >
+                <span className="text-lg italic">🔔</span>
+                {alertas.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[10px] text-white rounded-full flex items-center justify-center font-bold border-2 border-white dark:border-[#111827]">
+                    {alertas.length}
+                  </span>
+                )}
+              </button>
+
+              <AnimatePresence>
+                {showNotificaciones && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-2 w-80 rounded-3xl border shadow-2xl z-50 overflow-hidden"
+                    style={{ backgroundColor: theme.card, borderColor: theme.border }}
+                  >
+                    <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: theme.border, backgroundColor: theme.subtle }}>
+                      <h3 className="text-xs font-black uppercase tracking-widest">Alertas Recientes</h3>
+                      <span className="px-2 py-0.5 rounded-full bg-rose-500 text-[10px] text-white font-bold">{alertas.length}</span>
+                    </div>
+                    <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                      {alertas.length > 0 ? (
+                        alertas.map((alerta) => (
+                          <div key={alerta.notificacion_id} className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors" style={{ borderColor: theme.border }}>
+                            <div className="flex gap-3 text-xs">
+                              <span className="text-lg">{alerta.tipo === 'stock' ? '📉' : '⚠️'}</span>
+                              <div>
+                                <p className="font-bold">{alerta.mensaje}</p>
+                                <p className="opacity-50 mt-1 uppercase text-[9px]">Revisar en Inventario</p>
+                              </div>
+                            </div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-10 text-center opacity-40 text-xs font-bold uppercase tracking-widest">Sin alertas pendientes</div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">MT</div>
         </div>
@@ -129,7 +199,7 @@ export default function DashboardPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <div className="bg-[#1E3A5F] p-7 rounded-[28px] shadow-xl text-white relative overflow-hidden group">
               <div className="relative z-10">
-                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-300/60 mb-1">Ingresos Totales (Ref: ingresos)</p>
+                <p className="text-[10px] font-black uppercase tracking-[0.2em] text-blue-300/60 mb-1">Ingresos Totales</p>
                 <h3 className="text-4xl font-black italic tracking-tighter">$2.840.000</h3>
                 <div className="mt-4 flex items-center gap-2 bg-white/10 w-fit px-3 py-1 rounded-full border border-white/10 text-emerald-400 font-bold text-xs">▲ +12.5%</div>
               </div>
@@ -137,7 +207,7 @@ export default function DashboardPage() {
             </div>
 
             <div className="p-7 rounded-[28px] border shadow-sm group transition-colors duration-500" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
-              <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1" style={{ color: theme.textMuted }}>Ventas Realizadas (Ref: ventas)</p>
+              <p className="text-[10px] font-black uppercase tracking-[0.2em] mb-1" style={{ color: theme.textMuted }}>Ventas Realizadas</p>
               <h3 className="text-4xl font-black italic tracking-tighter">1,248</h3>
               <p className="text-xs mt-4 text-blue-600 font-bold flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-blue-600 rounded-full animate-pulse"></span>
@@ -172,10 +242,9 @@ export default function DashboardPage() {
               <p className="text-xs mt-4 font-bold flex items-center gap-2">Generar Reporte PDF <span>➜</span></p>
               <span className="absolute -right-4 -bottom-4 text-8xl opacity-20 group-hover:-translate-x-2 transition-transform select-none">📊</span>
             </motion.div>
-       
           </div>
 
-          {/* SECCIÓN 2: GRÁFICOS Y ANALÍTICA */}
+          {/* SECCIÓN 2: GRÁFICOS */}
           <div className="grid grid-cols-12 gap-6">
             <div className="col-span-12 lg:col-span-8 p-8 rounded-[32px] border transition-colors duration-500 shadow-sm" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
               <div className="flex justify-between items-center mb-8">
@@ -183,7 +252,7 @@ export default function DashboardPage() {
               </div>
               <div className={`h-[300px] w-full rounded-[24px] border border-dashed flex flex-col items-center justify-center ${isMounted ? "transition-colors duration-500" : ""}`} 
                    style={{ backgroundColor: theme.subtle, borderColor: theme.border }}>
-                <p style={{ color: theme.textMuted }} className="text-[10px] font-black uppercase tracking-widest opacity-40">Área para Gráfico de Líneas (Recharts/Chart.js)</p>
+                <p style={{ color: theme.textMuted }} className="text-[10px] font-black uppercase tracking-widest opacity-40 italic">Visualización de Datos Reales pendiente de enlace</p>
               </div>
             </div>
 
@@ -197,10 +266,10 @@ export default function DashboardPage() {
                   </div>
                 </div>
               </div>
-              <p className="text-center text-[11px] font-bold opacity-60 px-4">Estás superando el promedio de ventas de la semana pasada.</p>
+              <p className="text-center text-[11px] font-bold opacity-60 px-4 italic">El volumen de transacciones ha crecido un 4% respecto a ayer.</p>
             </div>
 
-            {/* PRODUCTOS ESTRELLA (Vinculado a detalle_venta) */}
+            {/* PRODUCTOS ESTRELLA */}
             <div className="col-span-12 p-8 rounded-[32px] border transition-colors duration-500 shadow-sm" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
               <h4 className="font-black uppercase text-[10px] tracking-[0.3em] mb-8">Productos más vendidos (Top 4)</h4>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-8">
@@ -220,7 +289,7 @@ export default function DashboardPage() {
                         initial={{ width: 0 }}
                         animate={{ width: isMounted ? prod.val : 0 }}
                         transition={{ duration: 1.5, ease: "easeOut", delay: idx * 0.1 }}
-                        className={`${prod.color} h-full rounded-full shadow-[0_0_10px_rgba(59,130,246,0.3)]`}
+                        className={`${prod.color} h-full rounded-full shadow-[0_0_10px_rgba(59,130,246,0.2)]`}
                       />
                     </div>
                   </div>
