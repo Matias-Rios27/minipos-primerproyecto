@@ -35,6 +35,7 @@ export default function LoginPage() {
       localStorage.setItem("token", response.data.token);
       const nombreUsuario = response.data.user?.nombre || "Usuario";
       localStorage.setItem("user_name", nombreUsuario);
+      localStorage.setItem("user_id", response.data.usuario_id);
       setSuccessMsg(`Sesión iniciada: Hola, ${nombreUsuario}`);
       setTimeout(() => router.push("/Main"), 1500);
     } catch (err: any) {

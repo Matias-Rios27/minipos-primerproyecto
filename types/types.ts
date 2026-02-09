@@ -23,6 +23,25 @@ export interface Proveedor {
   nombre: string;
 }
 
+export interface Venta {
+  venta_id: number;
+  usuario_id: number;
+  total: number;
+  fecha_venta: string; 
+  usuario_nombre?: string;
+}
+
+export interface DetalleVenta {
+  detalle_id: number;
+  venta_id: number;
+  producto_id: number;
+  cantidad: number;
+  precio_unitario: number;
+  subtotal: number;
+  nombre_producto?: string; 
+  imagen_url?: string;
+}
+
 export interface Alerta {
   notificacion_id: number;
   mensaje: string;

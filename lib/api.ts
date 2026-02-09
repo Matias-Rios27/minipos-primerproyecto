@@ -26,7 +26,21 @@ export const updateProducto = async (id: number, formData: FormData) => {
 };
 
 export const getNotificaciones = async () => (await api.get('/api/notificaciones')).data;
+
 export const getCategorias = async () => (await api.get('/api/categorias')).data;
+
 export const getProveedores = async () => (await api.get('/api/proveedores')).data;
+
+export const getVentas = async () => {
+  return (await api.get('/api/ventas')).data;
+};
+
+export const getVentaDetalles = async (id: string | number) => {
+  return (await api.get(`/api/ventas/${id}`)).data;
+};
+
+export const createVenta = async (ventaData: { usuario_id: number, total: number, items: any[] }) => {
+  return (await api.post('/api/ventas', ventaData)).data;
+};
 
 export default api;

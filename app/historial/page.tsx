@@ -3,8 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { getNotificaciones } from "@/lib/api"; // Asegúrate de tener este helper
-import { Alerta } from "@/types/types";
+import { getNotificaciones, getVentas } from "@/lib/api"; // Agregamos getVentas
+import { Alerta, Venta } from "@/types/types"; // Importamos el tipo Venta
 
 export default function HistorialPage() {
   const router = useRouter();
@@ -12,11 +12,16 @@ export default function HistorialPage() {
   const [isDark, setIsDark] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [userName, setUserName] = useState("Usuario");
+  
+  // ESTADOS PARA DATOS DE BASE DE DATOS
+  const [ventas, setVentas] = useState<Venta[]>([]);
+  const [loading, setLoading] = useState(true);
+  
   // ESTADOS PARA NOTIFICACIONES
   const [alertas, setAlertas] = useState<Alerta[]>([]);
   const [showNotificaciones, setShowNotificaciones] = useState(false);
 
-  // 1. SINCRONIZACIÓN Y PERMANENCIA
+  // 1. SINCRONIZACIÓN Y CARGA DE DATOS REALES
   useEffect(() => {
     const storedUser = localStorage.getItem("user_name") || "Admin"; 
     setUserName(storedUser);
@@ -35,16 +40,24 @@ export default function HistorialPage() {
       attributeFilter: ["class"],
     });
 
-    // Carga inicial de alertas
-    const loadAlerts = async () => {
+    // Carga inicial de datos (Ventas + Alertas)
+    const loadData = async () => {
+      setLoading(true);
       try {
-        const data = await getNotificaciones();
-        setAlertas(data || []);
+        const [ventasData, alertsData] = await Promise.all([
+          getVentas(),
+          getNotificaciones()
+        ]);
+        setVentas(ventasData || []);
+        setAlertas(alertsData || []);
       } catch (e) {
-        console.error("Error cargando alertas", e);
+        console.error("Error cargando datos de la BD", e);
+      } finally {
+        setLoading(false);
       }
     };
-    loadAlerts();
+    
+    loadData();
 
     return () => {
       observer.disconnect();
@@ -77,16 +90,10 @@ export default function HistorialPage() {
     tableRow: isDark ? "hover:bg-blue-900/10" : "hover:bg-blue-50/30"
   }), [isDark]);
 
-  const historialVentas = [
-    { id: "V-1024", fecha: "2026-02-02 14:30", cliente: "Publico General", total: 15500, items: 3, estado: "Completado" },
-    { id: "V-1025", fecha: "2026-02-02 15:15", cliente: "Juan Pérez", total: 8900, items: 1, estado: "Completado" },
-    { id: "V-1026", fecha: "2026-02-02 16:00", cliente: "Publico General", total: 45000, items: 12, estado: "Anulado" },
-    { id: "V-1027", fecha: "2026-02-02 16:45", cliente: "María Soto", total: 12300, items: 4, estado: "Completado" },
-  ];
-
-  const filteredVentas = historialVentas.filter(venta => 
-    venta.id.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    venta.cliente.toLowerCase().includes(searchTerm.toLowerCase())
+  // FILTRADO DINÁMICO SOBRE DATOS DE LA BD
+  const filteredVentas = ventas.filter(venta => 
+    venta.venta_id.toString().includes(searchTerm) ||
+    venta.usuario_id?.toString().includes(searchTerm)
   );
 
   return (
@@ -124,56 +131,54 @@ export default function HistorialPage() {
               {isDark ? "☀️" : "🌙"}
             </button>
 
-            {/* DROPDOWN NOTIFICACIONES */}
-              {/* BOTÓN Y DROPDOWN NOTIFICACIONES */}
-          <div className="relative">
-            <button 
-              onClick={() => setShowNotificaciones(!showNotificaciones)}
-              className="p-2.5 rounded-xl border transition-all relative active:scale-90 hover:bg-slate-500/5" 
-              style={{ backgroundColor: theme.card, borderColor: theme.border }}
-            >
-              <span className="text-lg italic">🔔</span>
-              {alertas.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[10px] text-white rounded-full flex items-center justify-center font-bold border-2 border-white dark:border-[#111827]">
-                  {alertas.length}
-                </span>
-              )}
-            </button>
+            <div className="relative">
+              <button 
+                onClick={() => setShowNotificaciones(!showNotificaciones)}
+                className="p-2.5 rounded-xl border transition-all relative active:scale-90 hover:bg-slate-500/5" 
+                style={{ backgroundColor: theme.card, borderColor: theme.border }}
+              >
+                <span className="text-lg italic">🔔</span>
+                {alertas.length > 0 && (
+                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[10px] text-white rounded-full flex items-center justify-center font-bold border-2 border-white dark:border-[#111827]">
+                    {alertas.length}
+                  </span>
+                )}
+              </button>
 
-            <AnimatePresence>
-              {showNotificaciones && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-80 rounded-3xl border shadow-2xl z-50 overflow-hidden"
-                  style={{ backgroundColor: theme.card, borderColor: theme.border }}
-                >
-                  <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: theme.border, backgroundColor: theme.subtle }}>
-                    <h3 className="text-xs font-black uppercase tracking-widest">Alertas Recientes</h3>
-                    <span className="px-2 py-0.5 rounded-full bg-rose-500 text-[10px] text-white font-bold">{alertas.length}</span>
-                  </div>
-                  <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
-                    {alertas.length > 0 ? (
-                      alertas.map((alerta) => (
-                        <div key={alerta.notificacion_id} className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors" style={{ borderColor: theme.border }}>
-                          <div className="flex gap-3 text-xs">
-                            <span className="text-lg">{alerta.tipo === 'stock' ? '📉' : '⚠️'}</span>
-                            <div>
-                              <p className="font-bold">{alerta.mensaje}</p>
-                              <p className="opacity-50 mt-1">Revisar stock en Inventario</p>
+              <AnimatePresence>
+                {showNotificaciones && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-2 w-80 rounded-3xl border shadow-2xl z-50 overflow-hidden"
+                    style={{ backgroundColor: theme.card, borderColor: theme.border }}
+                  >
+                    <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: theme.border, backgroundColor: theme.subtle }}>
+                      <h3 className="text-xs font-black uppercase tracking-widest">Alertas Recientes</h3>
+                      <span className="px-2 py-0.5 rounded-full bg-rose-500 text-[10px] text-white font-bold">{alertas.length}</span>
+                    </div>
+                    <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
+                      {alertas.length > 0 ? (
+                        alertas.map((alerta) => (
+                          <div key={alerta.notificacion_id} className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors" style={{ borderColor: theme.border }}>
+                            <div className="flex gap-3 text-xs">
+                              <span className="text-lg">{alerta.tipo === 'stock' ? '📉' : '⚠️'}</span>
+                              <div>
+                                <p className="font-bold">{alerta.mensaje}</p>
+                                <p className="opacity-50 mt-1">Revisar stock en Inventario</p>
+                              </div>
                             </div>
                           </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-10 text-center opacity-40 text-xs font-bold">Sin alertas pendientes</div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+                        ))
+                      ) : (
+                        <div className="p-10 text-center opacity-40 text-xs font-bold">Sin alertas pendientes</div>
+                      )}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
           </div>
           <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shadow-sm">
             {userName.substring(0, 2).toUpperCase()}
@@ -189,7 +194,7 @@ export default function HistorialPage() {
             <div className="relative flex-1">
               <input
                 type="text"
-                placeholder="Buscar por ID de venta, cliente o fecha..."
+                placeholder="Buscar por ID de venta o usuario..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="w-full border rounded-2xl py-4 px-14 outline-none text-sm font-bold"
@@ -210,66 +215,59 @@ export default function HistorialPage() {
               <thead>
                 <tr style={{ backgroundColor: theme.subtle }}>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>ID Transacción</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Marca de Tiempo</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Cliente</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Cant.</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Fecha</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>ID Usuario</th>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Monto Total</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em]" style={{ color: theme.textMuted }}>Estado</th>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-[0.2em] text-center" style={{ color: theme.textMuted }}>Acciones</th>
                 </tr>
               </thead>
               <tbody className="divide-y" style={{ borderColor: theme.border }}>
-                <AnimatePresence>
-                  {filteredVentas.map((venta) => (
-                    <motion.tr 
-                      key={venta.id}
-                      initial={{ opacity: 0, y: 5 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      className={`transition-colors group ${theme.tableRow}`}
-                    >
-                      <td className="px-6 py-5">
-                        <span className="font-black text-blue-500 text-sm">#{venta.id}</span>
-                      </td>
-                      <td className="px-6 py-5 text-[12px] font-bold" style={{ color: theme.textMuted }}>{venta.fecha}</td>
-                      <td className="px-6 py-5 text-sm font-black uppercase tracking-tight">{venta.cliente}</td>
-                      <td className="px-6 py-5 text-sm font-bold" style={{ color: theme.textMuted }}>{venta.items} un.</td>
-                      <td className="px-6 py-5">
-                        <span className="text-sm font-black text-emerald-500">
-                          ${new Intl.NumberFormat("es-CL").format(venta.total)}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5">
-                        <span className={`px-3 py-1.5 rounded-lg text-[9px] font-black uppercase tracking-widest ${
-                          venta.estado === 'Completado' 
-                            ? (isDark ? 'bg-emerald-900/30 text-emerald-400' : 'bg-emerald-100 text-emerald-600') 
-                            : (isDark ? 'bg-rose-900/30 text-rose-400' : 'bg-rose-100 text-rose-600')
-                        }`}>
-                          {venta.estado}
-                        </span>
-                      </td>
-                      <td className="px-6 py-5 text-center">
-                        <button 
-                          onClick={() => router.push("/historial/id")}
-                          className="p-2 rounded-xl border border-transparent transition-all opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-90"
-                          style={{ backgroundColor: theme.subtle, borderColor: theme.border }}
-                        >
-                          👁️‍🗨️
-                        </button>
-                      </td>
-                    </motion.tr>
-                  ))}
-                </AnimatePresence>
+                {loading ? (
+                   <tr>
+                     <td colSpan={5} className="p-20 text-center font-bold opacity-50">Sincronizando con la Base de Datos...</td>
+                   </tr>
+                ) : (
+                  <AnimatePresence mode="popLayout">
+                    {filteredVentas.map((venta) => (
+                      <motion.tr 
+                        key={venta.venta_id}
+                        initial={{ opacity: 0, y: 5 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        className={`transition-colors group ${theme.tableRow}`}
+                      >
+                        <td className="px-6 py-5">
+                          <span className="font-black text-blue-500 text-sm">#V-{venta.venta_id}</span>
+                        </td>
+                        <td className="px-6 py-5 text-[12px] font-bold" style={{ color: theme.textMuted }}>
+                          {new Date(venta.fecha_venta).toLocaleString('es-CL')}
+                        </td>
+                        <td className="px-6 py-5 text-sm font-black uppercase tracking-tight">
+                          USR-{venta.usuario_id}
+                        </td>
+                        <td className="px-6 py-5">
+                          <span className="text-sm font-black text-emerald-500">
+                            ${new Intl.NumberFormat("es-CL").format(venta.total)}
+                          </span>
+                        </td>
+                        <td className="px-6 py-5 text-center">
+                          <button 
+                            onClick={() => router.push(`/historial/${venta.venta_id}`)}
+                            className="p-2 rounded-xl border border-transparent transition-all opacity-0 group-hover:opacity-100 hover:scale-110 active:scale-90"
+                            style={{ backgroundColor: theme.subtle, borderColor: theme.border }}
+                          >
+                            👁️‍🗨️
+                          </button>
+                        </td>
+                      </motion.tr>
+                    ))}
+                  </AnimatePresence>
+                )}
               </tbody>
             </table>
           </div>
           
-          {/* PAGINACIÓN */}
           <div className="mt-8 flex justify-between items-center px-4">
-            <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: theme.textMuted }}>Sync: Quilicura_DB_v2</p>
-            <div className="flex gap-2">
-              <button className="px-6 py-2.5 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-[#1E3A5F] hover:text-white" style={{ backgroundColor: theme.card, borderColor: theme.border }}>Anterior</button>
-              <button className="px-6 py-2.5 border rounded-xl text-[10px] font-black uppercase tracking-widest transition-all hover:bg-[#1E3A5F] hover:text-white" style={{ backgroundColor: theme.card, borderColor: theme.border }}>Siguiente</button>
-            </div>
+            <p className="text-[10px] font-black uppercase tracking-widest" style={{ color: theme.textMuted }}>Sync: Quilicura_DB_v2 | Registros: {ventas.length}</p>
           </div>
         </div>
       </main>
