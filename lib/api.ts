@@ -31,12 +31,21 @@ export const getCategorias = async () => (await api.get('/api/categorias')).data
 
 export const getProveedores = async () => (await api.get('/api/proveedores')).data;
 
+
 export const getVentas = async () => {
   return (await api.get('/api/ventas')).data;
 };
 
 export const getVentaDetalles = async (id: string | number) => {
   return (await api.get(`/api/ventas/${id}`)).data;
+};
+
+export const deleteVenta = async (id: string | number) => {
+  return (await api.delete(`/api/ventas/${id}`)).data;
+};
+
+export const updateVenta = async (id: string | number, ventaData: any) => {
+  return (await api.put(`/api/ventas/${id}`, ventaData)).data;
 };
 
 export const createVenta = async (ventaData: { usuario_id: number, total: number, items: any[] }) => {

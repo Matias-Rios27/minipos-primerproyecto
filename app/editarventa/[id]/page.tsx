@@ -1,38 +1,89 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import { motion } from "framer-motion";
+import { useRouter, useParams } from "next/navigation";
+import { motion, AnimatePresence } from "framer-motion";
+import { getVentaDetalles, updateVenta } from "@/lib/api"; // Tu API
+import { Venta, DetalleVenta } from "@/types/types"; // Tus Types
 
 export default function EditarVentaPage() {
   const router = useRouter();
+  const { id } = useParams(); // Obtiene el ID de la URL
+  
   const [isDark, setIsDark] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const [userName, setUserName] = useState("Usuario");
-  // 1. SINCRONIZACIÓN Y PERMANENCIA DEL TEMA
+  
+  // ESTADOS PARA DATOS REALES
+  const [loading, setLoading] = useState(true);
+  const [isSaving, setIsSaving] = useState(false);
+  const [showSuccess, setShowSuccess] = useState(false);
+  const [venta, setVenta] = useState<Venta | null>(null);
+  const [detalles, setDetalles] = useState<DetalleVenta[]>([]);
+
+  // 1. SINCRONIZACIÓN Y CARGA DE DATOS
   useEffect(() => {
+    const fetchData = async () => {
+      try {
+        const data = await getVentaDetalles(id as string);
+        if (data) {
+          setVenta(data);
+          setDetalles(data.detalles || []);
+        }
+      } catch (error) {
+        console.error("Error cargando venta", error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
     const storedUser = localStorage.getItem("user_name") || "Admin"; 
     setUserName(storedUser);
-
     const isDarkMode = document.documentElement.classList.contains("dark");
     setIsDark(isDarkMode);
-
     const timer = setTimeout(() => setIsMounted(true), 100);
+
+    if (id) fetchData();
 
     const observer = new MutationObserver(() => {
       setIsDark(document.documentElement.classList.contains("dark"));
     });
-
-    observer.observe(document.documentElement, {
-      attributes: true,
-      attributeFilter: ["class"],
-    });
+    observer.observe(document.documentElement, { attributes: true, attributeFilter: ["class"] });
 
     return () => {
       observer.disconnect();
       clearTimeout(timer);
     };
-  }, []);
+  }, [id]);
+
+  // 2. FUNCIONES DE HABILITACIÓN (Edición)
+  const handleCantidadChange = (detalleId: number, nuevaCant: number) => {
+    setDetalles(prev => prev.map(item => 
+      item.detalle_id === detalleId ? { ...item, cantidad: nuevaCant, subtotal: nuevaCant * item.precio_unitario } : item
+    ));
+  };
+
+  const handleRemove = (detalleId: number) => {
+    setDetalles(prev => prev.filter(item => item.detalle_id !== detalleId));
+  };
+
+  const totalCalculado = detalles.reduce((acc, item) => acc + (item.cantidad * item.precio_unitario), 0);
+
+  const onGuardar = async () => {
+    try {
+      setIsSaving(true);
+      await updateVenta(id as string, {
+        ...venta,
+        total: totalCalculado,
+        items: detalles
+      });
+      setShowSuccess(true);
+    } catch (error) {
+      alert("Error al guardar");
+    } finally {
+      setIsSaving(false);
+    }
+  };
 
   const toggleDarkMode = () => {
     const newMode = !isDark;
@@ -60,13 +111,15 @@ export default function EditarVentaPage() {
   const labelStyle = "text-[10px] font-black uppercase tracking-[0.15em] mb-2 block opacity-60";
   const inputStyle = `w-full p-4 rounded-2xl border outline-none font-bold text-sm transition-all focus:ring-4 focus:ring-blue-500/10`;
 
+  if (loading) return <div className="h-screen flex items-center justify-center font-black uppercase tracking-tighter" style={{backgroundColor: theme.bg, color: theme.text}}>Cargando Registro...</div>;
+
   return (
     <div 
       className={`flex flex-col h-screen font-sans overflow-hidden ${isMounted ? "transition-colors duration-500" : "transition-none"}`}
       style={{ backgroundColor: theme.bg, color: theme.text }}
     >
       
-      {/* EL NAVBAR ORIGINAL QUE ME DISTE */}
+      {/* HEADER ORIGINAL */}
       <header 
         className={`h-20 backdrop-blur-md border-b px-8 flex justify-between items-center z-30 shrink-0 ${isMounted ? "transition-colors duration-500" : ""}`}
         style={{ backgroundColor: theme.header, borderColor: theme.border }}
@@ -121,22 +174,23 @@ export default function EditarVentaPage() {
             <div className="w-full lg:w-72 bg-[#1E3A5F] p-8 text-white flex flex-col justify-between">
               <div>
                 <p className={labelStyle} style={{ color: "rgba(147, 197, 253, 0.4)" }}>Folio en Edición</p>
-                <h2 className="text-5xl font-black italic tracking-tighter mb-8">#001</h2>
+                <h2 className="text-5xl font-black italic tracking-tighter mb-8">#{id}</h2>
                 
                 <div className="space-y-4">
                   <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
-                    <p className="text-[9px] font-black uppercase text-blue-300/50 mb-1">Tipo de Documento</p>
-                    <span className="text-xs font-bold">Boleta Electrónica</span>
+                    <p className="text-[9px] font-black uppercase text-blue-300/50 mb-1">Total Actualizado</p>
+                    <span className="text-xl font-black">${new Intl.NumberFormat("es-CL").format(totalCalculado)}</span>
                   </div>
                 </div>
               </div>
 
               <div className="mt-10 space-y-3">
-                <button className="w-full bg-blue-500 text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest hover:bg-blue-400 transition-all shadow-lg active:scale-95">
-                  💾 Guardar Cambios
-                </button>
-                <button className="w-full bg-rose-500/10 text-rose-400 border border-rose-500/20 font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest hover:bg-rose-500 hover:text-white transition-all">
-                  Eliminar Registro
+                <button 
+                  onClick={onGuardar}
+                  disabled={isSaving}
+                  className="w-full bg-blue-500 text-white font-black py-4 rounded-2xl text-[10px] uppercase tracking-widest hover:bg-blue-400 transition-all shadow-lg active:scale-95 disabled:opacity-50"
+                >
+                  {isSaving ? "Guardando..." : "💾 Guardar Cambios"}
                 </button>
               </div>
             </div>
@@ -146,7 +200,9 @@ export default function EditarVentaPage() {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-10">
                 <div>
                   <label className={labelStyle} style={{ color: theme.textMuted }}>Fecha Venta</label>
-                  <input type="date" defaultValue="2026-02-13" className={inputStyle} 
+                  <input type="date" value={venta?.fecha_venta ? venta.fecha_venta.split('T')[0] : ""}
+                    onChange={(e) => setVenta(v => v ? {...v, fecha_venta: e.target.value} : null)}
+                    className={inputStyle} 
                     style={{ backgroundColor: theme.input, borderColor: theme.border, color: theme.text }} />
                 </div>
                 <div>
@@ -164,29 +220,58 @@ export default function EditarVentaPage() {
               </h3>
 
               <div className="space-y-3">
-                {[1, 2].map((i) => (
-                  <div key={i} className="flex items-center gap-4 p-4 rounded-2xl border" style={{ borderColor: theme.border, backgroundColor: theme.subtle }}>
-                    <div className="flex-1">
-                      <p className="text-sm font-black italic">Producto Ejemplo {i}</p>
-                      <p className="text-[9px] font-bold opacity-50 uppercase">Categoría General</p>
-                    </div>
-                    <div className="w-20">
-                      <p className="text-[8px] font-black opacity-40 uppercase">Cant.</p>
-                      <input type="number" defaultValue="1" className="w-full bg-transparent font-black outline-none" style={{ color: theme.text }} />
-                    </div>
-                    <div className="w-24 text-right">
-                      <p className="text-[8px] font-black opacity-40 uppercase">Precio</p>
-                      <input type="text" defaultValue="$1.000" className="w-full bg-transparent font-black text-right outline-none" style={{ color: theme.text }} />
-                    </div>
-                    <button className="p-2 text-rose-500 opacity-50 hover:opacity-100">✕</button>
-                  </div>
-                ))}
+                <AnimatePresence>
+                  {detalles.map((item) => (
+                    <motion.div 
+                      key={item.detalle_id} 
+                      exit={{ opacity: 0, x: 20 }}
+                      className="flex items-center gap-4 p-4 rounded-2xl border" 
+                      style={{ borderColor: theme.border, backgroundColor: theme.subtle }}
+                    >
+                      <div className="flex-1">
+                        <p className="text-sm font-black italic">{item.nombre_producto || "Producto"}</p>
+                        <p className="text-[9px] font-bold opacity-50 uppercase">ID: {item.producto_id}</p>
+                      </div>
+                      <div className="w-20">
+                        <p className="text-[8px] font-black opacity-40 uppercase">Cant.</p>
+                        <input 
+                          type="number" 
+                          value={item.cantidad} 
+                          onChange={(e) => handleCantidadChange(item.detalle_id, parseInt(e.target.value) || 0)}
+                          className="w-full bg-transparent font-black outline-none border-b border-blue-500/20" 
+                          style={{ color: theme.text }} 
+                        />
+                      </div>
+                      <div className="w-24 text-right">
+                        <p className="text-[8px] font-black opacity-40 uppercase">Precio Unit.</p>
+                        <p className="font-black text-xs">${new Intl.NumberFormat("es-CL").format(item.precio_unitario)}</p>
+                      </div>
+                      <button onClick={() => handleRemove(item.detalle_id)} className="p-2 text-rose-500 opacity-50 hover:opacity-100">✕</button>
+                    </motion.div>
+                  ))}
+                </AnimatePresence>
               </div>
             </div>
 
           </div>
         </div>
       </main>
+
+      {/* MODAL DE ÉXITO (Habilitado) */}
+      <AnimatePresence>
+        {showSuccess && (
+          <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-black/60 backdrop-blur-sm">
+            <motion.div initial={{ scale: 0.9, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} className={`max-w-sm w-full p-8 rounded-[40px] text-center shadow-2xl ${isDark ? "bg-slate-900 border border-emerald-500/30" : "bg-white"}`}>
+              <div className="w-20 h-20 bg-emerald-500 rounded-full flex items-center justify-center text-white text-3xl mx-auto mb-6 shadow-lg shadow-emerald-500/40">✓</div>
+              <h3 className="text-2xl font-black mb-2">¡Venta Actualizada!</h3>
+              <p className="text-slate-500 text-sm mb-8 font-medium text-pretty">Los cambios en el folio <b>#{id}</b> se han sincronizado con la base de datos.</p>
+              <button onClick={() => router.push('/historial')} className="w-full py-4 bg-emerald-500 text-white rounded-2xl font-black uppercase tracking-widest text-xs hover:bg-emerald-400 transition-all">
+                Finalizar y Salir
+              </button>
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

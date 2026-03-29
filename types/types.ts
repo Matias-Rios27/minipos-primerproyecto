@@ -26,9 +26,16 @@ export interface Proveedor {
 export interface Venta {
   venta_id: number;
   usuario_id: number;
+  producto_id: number;
   total: number;
   fecha_venta: string; 
   usuario_nombre?: string;
+}
+
+export interface VentaExitosa {
+  id: number;
+  total: number;
+  items: CartItem[];
 }
 
 export interface DetalleVenta {
