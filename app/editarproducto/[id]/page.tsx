@@ -2,7 +2,8 @@
 
 import { useState, useEffect, useRef, ChangeEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
-import { getProductById, updateProducto, getNotificaciones, deleteProduct, getProveedores } from "@/lib/api";
+import { getProductById, updateProducto, getNotificaciones, deleteNotificacion, deleteProduct, getProveedores, getCategorias } from "@/lib/api";
+import { Categoria } from "@/types/types";
 
 interface Alerta {
   notificacion_id: number;
@@ -32,17 +33,9 @@ export default function EditarProductoPage() {
   const [preview, setPreview] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  // --- LÓGICA DE PROVEEDORES ---
+  // --- LÓGICA DE PROVEEDORES Y CATEGORIAS ---
   const [proveedoresDB, setProveedoresDB] = useState<Proveedor[]>([]);
-
-  const categoriesList = [
-    { id: "1", name: "Bebidas", icon: "🥤" },
-    { id: "2", name: "Alimentos", icon: "🍱" },
-    { id: "3", name: "Limpieza", icon: "🧼" },
-    { id: "4", name: "Cuidado Personal", icon: "✨" },
-    { id: "5", name: "Electronicos", icon: "💻" },
-    { id: "6", name: "Mascotas", icon: "🐾" },
-  ];
+  const [categoriasDB, setCategoriasDB] = useState<Categoria[]>([]);
 
   const [formData, setFormData] = useState({
     nombre: "",
@@ -59,6 +52,9 @@ export default function EditarProductoPage() {
       try {
         const resProveedores = await getProveedores();
         setProveedoresDB(resProveedores || []);
+
+        const resCategorias = await getCategorias();
+        setCategoriasDB(resCategorias || []);
 
         const p = await getProductById(Number(id));
         setFormData({
@@ -97,6 +93,10 @@ export default function EditarProductoPage() {
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (!file.type.startsWith("image/") && !/\.(jpg|jpeg|png|gif|webp|svg|bmp|jfif|avif)$/i.test(file.name)) {
+        alert("Por favor selecciona un formato de imagen válido (JPG, PNG, WEBP...).");
+        return;
+      }
       setImageFile(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -175,6 +175,18 @@ export default function EditarProductoPage() {
 
   if (!isMounted) return null;
 
+  
+  const handleDeleteNotificacion = async (id: number) => {
+    try {
+      await deleteNotificacion(id);
+      setAlertas(prev => prev.filter(a => a.notificacion_id !== id));
+    } catch (error) {
+      console.error("Error al eliminar notificación:", error);
+    }
+  };
+
+
+
   return (
     <div className="flex flex-col h-screen font-sans overflow-hidden transition-colors duration-500"
       style={{ backgroundColor: theme.bg, color: theme.text }}>
@@ -219,7 +231,7 @@ export default function EditarProductoPage() {
             {/* COLUMNA IMAGEN */}
             <div className="w-full md:w-1/3 flex flex-col gap-4">
               <label className={labelClass} style={{ color: theme.textMuted }}>Imagen Cloudinary</label>
-              <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
+              <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="*/*" className="hidden" />
 
               <div 
                 onClick={triggerFileInput}
@@ -275,8 +287,11 @@ export default function EditarProductoPage() {
                       className="w-full border rounded-2xl py-4 px-6 font-bold outline-none cursor-pointer"
                       style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }}
                     >
-                      {categoriesList.map((cat) => (
-                        <option key={cat.id} value={cat.id}>{cat.icon} {cat.name}</option>
+                      <option value="" disabled>Seleccionar Categoría</option>
+                      {categoriasDB.map((cat) => (
+                        <option key={cat.categoria_id} value={cat.categoria_id.toString()}>
+                          {cat.nombre}
+                        </option>
                       ))}
                     </select>
                   </div>

@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef, ChangeEvent } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { getNotificaciones, getCategorias, getProveedores, createProducto } from "@/lib/api";
+import { getNotificaciones, deleteNotificacion, getCategorias, getProveedores, createProducto } from "@/lib/api";
 import { Alerta, Categoria, Proveedor } from "@/types/types";
 
 export default function AgregarProductoPage() {
@@ -81,6 +81,10 @@ export default function AgregarProductoPage() {
   const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (file) {
+      if (!file.type.startsWith("image/") && !/\.(jpg|jpeg|png|gif|webp|svg|bmp|jfif|avif)$/i.test(file.name)) {
+        alert("Por favor selecciona un formato de imagen válido (JPG, PNG, WEBP...).");
+        return;
+      }
       setImagen(file);
       const reader = new FileReader();
       reader.onloadend = () => setPreview(reader.result as string);
@@ -135,6 +139,18 @@ export default function AgregarProductoPage() {
 
   const inputClass = "w-full border rounded-2xl py-4 px-6 outline-none transition-all text-sm font-bold focus:ring-4 focus:ring-blue-500/10";
   const labelClass = "text-[10px] font-black uppercase ml-2 mb-2 block tracking-widest";
+
+  
+  const handleDeleteNotificacion = async (id: number) => {
+    try {
+      await deleteNotificacion(id);
+      setAlertas(prev => prev.filter(a => a.notificacion_id !== id));
+    } catch (error) {
+      console.error("Error al eliminar notificación:", error);
+    }
+  };
+
+
 
   return (
     <div 
@@ -203,12 +219,20 @@ export default function AgregarProductoPage() {
                       {alertas.length > 0 ? (
                         alertas.map((alerta) => (
                           <div key={alerta.notificacion_id} className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors" style={{ borderColor: theme.border }}>
-                            <div className="flex gap-3 text-xs">
+                            <div className="flex gap-3 text-xs items-center justify-between">
                               <span className="text-lg">{alerta.tipo === 'stock' ? '📉' : '⚠️'}</span>
-                              <div>
+                              <div className="flex-1">
                                 <p className="font-bold">{alerta.mensaje}</p>
                                 <p className="opacity-50 mt-1">Revisar stock en Inventario</p>
                               </div>
+                            
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleDeleteNotificacion(alerta.notificacion_id); }}
+                                className="text-rose-500 hover:text-rose-700 bg-rose-500/10 hover:bg-rose-500/20 p-1.5 rounded-lg transition-colors ml-2"
+                                title="Eliminar notificación"
+                              >
+                                ❌
+                              </button>
                             </div>
                           </div>
                         ))
@@ -260,7 +284,7 @@ export default function AgregarProductoPage() {
               {/* ZONA DE CARGA DE IMAGEN */}
               <div className="md:col-span-1 flex flex-col gap-4">
                 <label className={labelClass} style={{ color: theme.textMuted }}>Imagen del Producto</label>
-                <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="image/*" className="hidden" />
+                <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="*/*" className="hidden" />
 
                 <div 
                   onClick={triggerFileInput}

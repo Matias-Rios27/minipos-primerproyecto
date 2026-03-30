@@ -79,6 +79,18 @@ export default function GestionGastosPage() {
     { id: 3, categoria: "Logística", desc: "Mantenimiento Camión", fecha: "2026-02-02", monto: 85000, estado: "Pagado" },
   ];
 
+  
+  const handleDeleteNotificacion = async (id: number) => {
+    try {
+      await deleteNotificacion(id);
+      setAlertas(prev => prev.filter(a => a.notificacion_id !== id));
+    } catch (error) {
+      console.error("Error al eliminar notificación:", error);
+    }
+  };
+
+
+
   return (
     <div 
       className={`flex flex-col h-screen font-sans overflow-hidden ${isMounted ? "transition-colors duration-500" : ""}`}

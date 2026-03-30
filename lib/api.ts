@@ -27,6 +27,10 @@ export const updateProducto = async (id: number, formData: FormData) => {
 
 export const getNotificaciones = async () => (await api.get('/api/notificaciones')).data;
 
+export const deleteNotificacion = async (id: number) => {
+  return (await api.delete(`/api/notificaciones/${id}`)).data;
+};
+
 export const getCategorias = async () => (await api.get('/api/categorias')).data;
 
 export const getProveedores = async () => (await api.get('/api/proveedores')).data;

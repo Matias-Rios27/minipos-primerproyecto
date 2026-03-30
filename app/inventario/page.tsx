@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { getNotificaciones, getProducts, deleteProduct, getProveedores } from "@/lib/api"; // Agregado getProviders
+import { getNotificaciones, deleteNotificacion, getProducts, deleteProduct, getProveedores } from "@/lib/api"; // Agregado getProviders
 import { Alerta } from "@/types/types";
 
 export default function InventoryPage() {
@@ -108,7 +108,7 @@ export default function InventoryPage() {
     3: "Limpieza",
     4: "Cuidado Personal",
     5: "Electrónicos",
-    6: "Mascotas",
+    7: "Mascotas",
   };
 
   const filteredProducts = products.filter((p) => {
@@ -122,6 +122,18 @@ export default function InventoryPage() {
       p.proveedor_id?.toString().includes(term)
     );
   });
+
+  
+  const handleDeleteNotificacion = async (id: number) => {
+    try {
+      await deleteNotificacion(id);
+      setAlertas(prev => prev.filter(a => a.notificacion_id !== id));
+    } catch (error) {
+      console.error("Error al eliminar notificación:", error);
+    }
+  };
+
+
 
   return (
     <div
@@ -185,13 +197,21 @@ export default function InventoryPage() {
                     <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
                       {alertas.length > 0 ? alertas.map((alerta) => (
                         <div key={alerta.notificacion_id} className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors" style={{ borderColor: theme.border }}>
-                          <div className="flex gap-3 text-xs">
+                          <div className="flex gap-3 text-xs items-center justify-between">
                             <span className="text-lg">{alerta.tipo === "stock" ? "📉" : "⚠️"}</span>
-                            <div>
+                            <div className="flex-1">
                               <p className="font-bold">{alerta.mensaje}</p>
                               <p className="opacity-50 mt-1">Revisar stock en Inventario</p>
                             </div>
-                          </div>
+                          
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleDeleteNotificacion(alerta.notificacion_id); }}
+                                className="text-rose-500 hover:text-rose-700 bg-rose-500/10 hover:bg-rose-500/20 p-1.5 rounded-lg transition-colors ml-2"
+                                title="Eliminar notificación"
+                              >
+                                ❌
+                              </button>
+                            </div>
                         </div>
                       )) : <div className="p-10 text-center opacity-40 text-xs font-bold">Sin alertas pendientes</div>}
                     </div>

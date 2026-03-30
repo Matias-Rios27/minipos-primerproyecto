@@ -81,6 +81,18 @@ export default function AgregarProveedorPage() {
   const inputClass = "w-full border rounded-2xl py-4 px-6 outline-none transition-all text-sm font-bold focus:ring-4 focus:ring-blue-500/10";
   const labelClass = "text-[10px] font-black uppercase ml-2 mb-2 block tracking-widest";
 
+  
+  const handleDeleteNotificacion = async (id: number) => {
+    try {
+      await deleteNotificacion(id);
+      setAlertas(prev => prev.filter(a => a.notificacion_id !== id));
+    } catch (error) {
+      console.error("Error al eliminar notificación:", error);
+    }
+  };
+
+
+
   return (
     <div 
       className={`flex flex-col h-screen font-sans overflow-hidden ${isMounted ? "transition-colors duration-500" : "transition-none"}`}
@@ -148,12 +160,20 @@ export default function AgregarProveedorPage() {
                       {alertas.length > 0 ? (
                         alertas.map((alerta) => (
                           <div key={alerta.notificacion_id} className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors" style={{ borderColor: theme.border }}>
-                            <div className="flex gap-3 text-xs">
+                            <div className="flex gap-3 text-xs items-center justify-between">
                               <span className="text-lg">{alerta.tipo === 'stock' ? '📉' : '⚠️'}</span>
-                              <div>
+                              <div className="flex-1">
                                 <p className="font-bold">{alerta.mensaje}</p>
                                 <p className="opacity-50 mt-1 uppercase text-[9px]">Ver detalles en inventario</p>
                               </div>
+                            
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleDeleteNotificacion(alerta.notificacion_id); }}
+                                className="text-rose-500 hover:text-rose-700 bg-rose-500/10 hover:bg-rose-500/20 p-1.5 rounded-lg transition-colors ml-2"
+                                title="Eliminar notificación"
+                              >
+                                ❌
+                              </button>
                             </div>
                           </div>
                         ))

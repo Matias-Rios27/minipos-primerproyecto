@@ -3,7 +3,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { getNotificaciones, getVentas } from "@/lib/api"; // Agregamos getVentas
+import { getNotificaciones, deleteNotificacion, getVentas } from "@/lib/api"; // Agregamos getVentas
 import { Alerta, Venta } from "@/types/types"; // Importamos el tipo Venta
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
@@ -183,6 +183,18 @@ export default function HistorialPage() {
     });
   }, [ventas, searchTerm]);
 
+  
+  const handleDeleteNotificacion = async (id: number) => {
+    try {
+      await deleteNotificacion(id);
+      setAlertas(prev => prev.filter(a => a.notificacion_id !== id));
+    } catch (error) {
+      console.error("Error al eliminar notificación:", error);
+    }
+  };
+
+
+
   return (
     <div
       className={`flex flex-col h-screen font-sans overflow-hidden ${isMounted ? "transition-colors duration-500" : "transition-none"}`}
@@ -302,16 +314,24 @@ export default function HistorialPage() {
                             className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors"
                             style={{ borderColor: theme.border }}
                           >
-                            <div className="flex gap-3 text-xs">
+                            <div className="flex gap-3 text-xs items-center justify-between">
                               <span className="text-lg">
                                 {alerta.tipo === "stock" ? "📉" : "⚠️"}
                               </span>
-                              <div>
+                              <div className="flex-1">
                                 <p className="font-bold">{alerta.mensaje}</p>
                                 <p className="opacity-50 mt-1">
                                   Revisar stock en Inventario
                                 </p>
                               </div>
+                            
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleDeleteNotificacion(alerta.notificacion_id); }}
+                                className="text-rose-500 hover:text-rose-700 bg-rose-500/10 hover:bg-rose-500/20 p-1.5 rounded-lg transition-colors ml-2"
+                                title="Eliminar notificación"
+                              >
+                                ❌
+                              </button>
                             </div>
                           </div>
                         ))

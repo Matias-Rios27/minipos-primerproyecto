@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { getProducts, getNotificaciones, createVenta } from "@/lib/api";
+import { getProducts, getNotificaciones, deleteNotificacion, createVenta } from "@/lib/api";
 import { Producto, Alerta, CartItem, VentaExitosa } from "@/types/types";
 import ProtectedRoute from "../components/ProtectedRoute";
 import jsPDF from "jspdf";
@@ -258,6 +258,18 @@ export default function SalesPage() {
     }
   };
 
+  
+  const handleDeleteNotificacion = async (id: number) => {
+    try {
+      await deleteNotificacion(id);
+      setAlertas(prev => prev.filter(a => a.notificacion_id !== id));
+    } catch (error) {
+      console.error("Error al eliminar notificación:", error);
+    }
+  };
+
+
+
   return (
     <ProtectedRoute>
       <div
@@ -424,17 +436,25 @@ export default function SalesPage() {
                               className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors"
                               style={{ borderColor: theme.border }}
                             >
-                              <div className="flex gap-3 text-xs">
+                              <div className="flex gap-3 text-xs items-center justify-between">
                                 <span className="text-lg">
                                   {alerta.tipo === "stock" ? "📉" : "⚠️"}
                                 </span>
-                                <div>
+                                <div className="flex-1">
                                   <p className="font-bold">{alerta.mensaje}</p>
                                   <p className="opacity-50 mt-1">
                                     Revisar stock en Inventario
                                   </p>
                                 </div>
-                              </div>
+                              
+                              <button 
+                                onClick={(e) => { e.stopPropagation(); handleDeleteNotificacion(alerta.notificacion_id); }}
+                                className="text-rose-500 hover:text-rose-700 bg-rose-500/10 hover:bg-rose-500/20 p-1.5 rounded-lg transition-colors ml-2"
+                                title="Eliminar notificación"
+                              >
+                                ❌
+                              </button>
+                            </div>
                             </div>
                           ))
                         ) : (
@@ -494,7 +514,7 @@ export default function SalesPage() {
                       Limpieza: 3,
                       "Cuidado Personal": 4,
                       Electronicos: 5,
-                      Mascotas: 6,
+                      Mascotas: 7,
                     };
                     const matchesCategory =
                       selectedCategory === "Todos los Artículos" ||
@@ -567,7 +587,7 @@ export default function SalesPage() {
                                 Limpieza: 3,
                                 "Cuidado Personal": 4,
                                 Electronicos: 5,
-                                Mascotas: 6,
+                                Mascotas: 7,
                               };
                               return (
                                 categoryMap[c.name] === product.categoria_id
