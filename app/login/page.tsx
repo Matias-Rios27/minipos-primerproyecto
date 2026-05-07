@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import api from "@/lib/api";
+import api, { deleteNotificacion } from "@/lib/api";
 import Image from "next/image";
 
 export default function LoginPage() {

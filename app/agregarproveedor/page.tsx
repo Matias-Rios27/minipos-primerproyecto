@@ -7,12 +7,7 @@ import {
   deleteNotificacion 
 } from "@/lib/api";
 
-// Interfaz para el tipado de alertas
-interface Alerta {
-  notificacion_id: number;
-  tipo: 'stock' | 'vencimiento';
-  mensaje: string;
-}
+import { Alerta } from "@/types/types";
 
 export default function AgregarProveedorPage() {
   const router = useRouter();

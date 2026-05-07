@@ -3,13 +3,7 @@
 import { useState, useEffect, useRef, ChangeEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getProductById, updateProducto, getNotificaciones, deleteNotificacion, deleteProduct, getProveedores, getCategorias } from "@/lib/api";
-import { Categoria } from "@/types/types";
-
-interface Alerta {
-  notificacion_id: number;
-  tipo: 'stock' | 'vencimiento';
-  mensaje: string;
-}
+import { Categoria, Alerta } from "@/types/types";
 
 interface Proveedor {
   proveedor_id: number;

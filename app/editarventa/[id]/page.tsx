@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { getVentaDetalles, updateVenta } from "@/lib/api"; // Tu API
+import { getVentaDetalles, updateVenta, deleteNotificacion } from "@/lib/api"; // Tu API
 import { Venta, DetalleVenta } from "@/types/types"; // Tus Types
 
 export default function EditarVentaPage() {

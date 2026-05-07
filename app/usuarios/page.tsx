@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from "react";
-import api from "@/lib/api";
+import api, { deleteNotificacion } from "@/lib/api";
 import axios, { type AxiosInstance } from "axios";
 
 type User = {

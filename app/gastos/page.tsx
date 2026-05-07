@@ -3,6 +3,10 @@
 import { useState, useEffect, useRef } from "react"; // Añadido useRef
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import {
+  deleteNotificacion
+} from "@/lib/api";
+import { Alerta } from "@/types/types";
 
 export default function GestionGastosPage() {
   const router = useRouter();
@@ -13,15 +17,15 @@ export default function GestionGastosPage() {
   // ESTADOS PARA NOTIFICACIONES (Siguiendo tu estilo previo)
   const [showNotificaciones, setShowNotificaciones] = useState(false);
   const notifRef = useRef<HTMLDivElement>(null);
-  const [alertas, setAlertas] = useState([
-    { id: 1, mensaje: "Stock Crítico: Coca-Cola Sin Azúcar", tipo: "stock" },
-    { id: 2, mensaje: "Gasto Pendiente: Pago Arriendo vence mañana", tipo: "gasto" },
+  const [alertas, setAlertas] = useState<Alerta[]>([
+    { notificacion_id: 1, mensaje: "Stock Crítico: Coca-Cola Sin Azúcar", tipo: "stock", leida: false, fecha: new Date().toISOString() },
+    { notificacion_id: 2, mensaje: "Gasto Pendiente: Pago Arriendo vence mañana", tipo: "otro", leida: false, fecha: new Date().toISOString() },
   ]);
 
   // 1. SINCRONIZACIÓN DE TEMA Y MONTAJE
   useEffect(() => {
-    const storedUser = localStorage.getItem("user_name") || "Admin"; 
-    setUserName(storedUser);    
+    const storedUser = localStorage.getItem("user_name") || "Admin";
+    setUserName(storedUser);
 
     const isDarkMode = document.documentElement.classList.contains("dark");
     setIsDark(isDarkMode);
@@ -79,7 +83,7 @@ export default function GestionGastosPage() {
     { id: 3, categoria: "Logística", desc: "Mantenimiento Camión", fecha: "2026-02-02", monto: 85000, estado: "Pagado" },
   ];
 
-  
+
   const handleDeleteNotificacion = async (id: number) => {
     try {
       await deleteNotificacion(id);
@@ -92,13 +96,13 @@ export default function GestionGastosPage() {
 
 
   return (
-    <div 
+    <div
       className={`flex flex-col h-screen font-sans overflow-hidden ${isMounted ? "transition-colors duration-500" : ""}`}
       style={{ backgroundColor: theme.bg, color: theme.text }}
     >
-      
+
       {/* HEADER SUPERIOR */}
-      <header 
+      <header
         className={`h-20 backdrop-blur-md border-b px-8 flex justify-between items-center z-30 shrink-0 ${isMounted ? "transition-colors duration-500" : ""}`}
         style={{ backgroundColor: theme.header, borderColor: theme.border }}
       >
@@ -114,23 +118,23 @@ export default function GestionGastosPage() {
         </div>
 
         <div className="flex items-center gap-3">
-          <div className={`hidden md:flex p-1 rounded-xl mr-4 border transition-colors ${isMounted ? "duration-500" : ""}`} 
+          <div className={`hidden md:flex p-1 rounded-xl mr-4 border transition-colors ${isMounted ? "duration-500" : ""}`}
             style={{ backgroundColor: theme.subtle, borderColor: theme.border }}>
-              <button onClick={() => router.push("/Main")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Punto de Venta</button>
-              <button onClick={() => router.push("/historial")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Historial</button>
-              <button onClick={() => router.push("/inventario")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Inventario</button>
-              <button className="px-4 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm" style={isDark ? {backgroundColor: "#334155", color: "#60A5FA"} : {}}>Dashboard</button>
+            <button onClick={() => router.push("/Main")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Punto de Venta</button>
+            <button onClick={() => router.push("/historial")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Historial</button>
+            <button onClick={() => router.push("/inventario")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Inventario</button>
+            <button className="px-4 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm" style={isDark ? { backgroundColor: "#334155", color: "#60A5FA" } : {}}>Dashboard</button>
           </div>
 
           <div className="flex items-center gap-2 relative" ref={notifRef}>
             <button onClick={toggleDarkMode} className="p-2.5 rounded-xl border transition-all text-lg shadow-sm active:scale-90" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
               {isDark ? "☀️" : "🌙"}
             </button>
-            
+
             {/* BOTÓN DE NOTIFICACIONES */}
-            <button 
+            <button
               onClick={() => setShowNotificaciones(!showNotificaciones)}
-              className="p-2.5 rounded-xl border transition-all relative active:scale-90" 
+              className="p-2.5 rounded-xl border transition-all relative active:scale-90"
               style={{ backgroundColor: theme.card, borderColor: theme.border }}
             >
               <span className="text-lg italic">🔔</span>
@@ -161,13 +165,20 @@ export default function GestionGastosPage() {
                   <div className="max-h-[350px] overflow-y-auto">
                     {alertas.length > 0 ? (
                       alertas.map((alerta) => (
-                        <div key={alerta.id} className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors" style={{ borderColor: theme.border }}>
-                          <div className="flex gap-3">
+                        <div key={alerta.notificacion_id} className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors" style={{ borderColor: theme.border }}>
+                          <div className="flex gap-3 text-xs items-center justify-between">
                             <span className="text-lg">{alerta.tipo === 'stock' ? '📉' : '⚠️'}</span>
-                            <div>
-                              <p className="text-xs font-bold leading-tight" style={{ color: theme.text }}>{alerta.mensaje}</p>
-                              <p className="text-[10px] opacity-50 mt-1 font-medium" style={{ color: theme.textMuted }}>Verificar ahora</p>
+                            <div className="flex-1">
+                              <p className="font-bold" style={{ color: theme.text }}>{alerta.mensaje}</p>
+                              <p className="opacity-50 mt-1 uppercase text-[9px]">Verificar ahora</p>
                             </div>
+                            <button 
+                                onClick={(e) => { e.stopPropagation(); handleDeleteNotificacion(alerta.notificacion_id); }}
+                                className="text-rose-500 hover:text-rose-700 bg-rose-500/10 hover:bg-rose-500/20 p-1.5 rounded-lg transition-colors ml-2"
+                                title="Eliminar notificación"
+                              >
+                                ❌
+                              </button>
                           </div>
                         </div>
                       ))
@@ -183,26 +194,26 @@ export default function GestionGastosPage() {
           </div>
           <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shadow-sm">
             {userName.substring(0, 2).toUpperCase()}
-          </div>        
+          </div>
         </div>
       </header>
 
       <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
         <div className="max-w-7xl mx-auto">
-          
+
           {/* TÍTULO Y BUSCADOR */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6 mb-10">
             <div>
               <h2 className="text-4xl font-black tracking-tighter uppercase italic leading-none">Registro de Gastos</h2>
               <p className="text-sm font-medium mt-1" style={{ color: theme.textMuted }}>Administración de categorías y egresos operativos</p>
             </div>
-            
+
             <div className="flex items-center gap-3 w-full md:w-auto">
               <div className="relative flex-1 md:w-80">
                 <span className="absolute left-4 top-1/2 -translate-y-1/2 opacity-30 text-sm">🔍</span>
-                <input 
-                  type="text" 
-                  placeholder="Buscar por categoría o descripción..." 
+                <input
+                  type="text"
+                  placeholder="Buscar por categoría o descripción..."
                   className="w-full pl-10 pr-4 py-3 rounded-2xl border text-sm outline-none transition-all focus:ring-4 focus:ring-blue-500/10"
                   style={{ backgroundColor: theme.card, borderColor: theme.border, color: theme.text }}
                   value={searchTerm}
@@ -217,8 +228,8 @@ export default function GestionGastosPage() {
 
           {/* TABLA DE GASTOS */}
           <div className="rounded-[32px] border overflow-hidden shadow-sm transition-colors duration-500" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
-            <div className="grid grid-cols-12 px-8 py-5 border-b text-[10px] font-black uppercase tracking-[0.2em]" 
-                 style={{ backgroundColor: isDark ? "#1F2937" : "#F1F5F9", borderColor: theme.border, color: theme.textMuted }}>
+            <div className="grid grid-cols-12 px-8 py-5 border-b text-[10px] font-black uppercase tracking-[0.2em]"
+              style={{ backgroundColor: isDark ? "#1F2937" : "#F1F5F9", borderColor: theme.border, color: theme.textMuted }}>
               <div className="col-span-2">Categoría</div>
               <div className="col-span-4">Descripción del Egreso</div>
               <div className="col-span-2 text-center">Fecha</div>
@@ -229,7 +240,7 @@ export default function GestionGastosPage() {
             <div className="divide-y" style={{ borderColor: theme.border }}>
               <AnimatePresence>
                 {gastos.map((gasto, idx) => (
-                  <motion.div 
+                  <motion.div
                     key={gasto.id}
                     initial={{ opacity: 0, x: -20 }}
                     animate={{ opacity: 1, x: 0 }}
@@ -237,9 +248,8 @@ export default function GestionGastosPage() {
                     className="grid grid-cols-12 px-8 py-6 items-center hover:bg-blue-500/5 transition-colors group"
                   >
                     <div className="col-span-2">
-                      <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter ${
-                        gasto.categoria === "Servicios" ? "bg-blue-100 text-blue-600" : "bg-orange-100 text-orange-600"
-                      }`}>
+                      <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-tighter ${gasto.categoria === "Servicios" ? "bg-blue-100 text-blue-600" : "bg-orange-100 text-orange-600"
+                        }`}>
                         {gasto.categoria}
                       </span>
                     </div>
@@ -252,7 +262,7 @@ export default function GestionGastosPage() {
                     </div>
                     <div className="col-span-2 flex justify-end gap-2">
                       <button className="p-2 rounded-xl border hover:bg-rose-500 hover:text-white transition-all active:scale-90"
-                              style={{ borderColor: theme.border }}>
+                        style={{ borderColor: theme.border }}>
                         🗑️
                       </button>
                       <button className="px-4 py-2 bg-[#1E3A5F] text-white text-[10px] font-black uppercase rounded-xl hover:opacity-80 transition-all active:scale-90 shadow-md">
@@ -273,7 +283,7 @@ export default function GestionGastosPage() {
                 <p className="text-3xl font-black italic tracking-tighter text-rose-500">$350.150</p>
               </div>
               <div className="h-12 w-px bg-slate-200" style={{ backgroundColor: theme.border }}></div>
-              <button 
+              <button
                 onClick={() => router.push("/balance")}
                 className="flex items-center gap-2 text-xs font-black uppercase tracking-widest hover:text-blue-500 transition-colors"
               >
