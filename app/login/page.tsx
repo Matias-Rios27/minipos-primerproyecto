@@ -100,6 +100,20 @@ export default function LoginPage() {
     }
   };
 
+  const handleGuestLogin = () => {
+    setEmail("portafolio@minipos.cl");
+    setPassword("portafolio2026");
+    setRememberMe(false);
+    
+    // Pequeño delay para que el usuario vea que se llenan los campos
+    setTimeout(() => {
+      const form = document.querySelector("form");
+      if (form) {
+        form.dispatchEvent(new Event("submit", { cancelable: true, bubbles: true }));
+      }
+    }, 600);
+  };
+
   return (
     <div className="min-h-screen flex bg-[#F8FAFC] font-sans selection:bg-blue-100 overflow-hidden">
       {/* SECCIÓN IZQUIERDA: FORMULARIO SaaS CLEAN */}
@@ -126,6 +140,44 @@ export default function LoginPage() {
               Gestiona tu inventario y ventas en tiempo real con MiniPOS.
             </p>
           </div>
+
+          {/* ACCESO PORTAFOLIO / GUEST */}
+          <motion.div 
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="mb-8 p-5 bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-100 rounded-3xl relative overflow-hidden group"
+          >
+            <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
+              <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" className="text-blue-600">
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+              </svg>
+            </div>
+            
+            <div className="relative z-10">
+              <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-3">
+                Acceso Portafolio
+              </h3>
+              <div className="flex items-center justify-between gap-4">
+                <div className="space-y-1">
+                  <p className="text-xs text-slate-600 font-bold">
+                    Email: <span className="text-blue-700 select-all">portafolio@minipos.cl</span>
+                  </p>
+                  <p className="text-xs text-slate-600 font-bold">
+                    Clave: <span className="text-blue-700 select-all">portafolio2026</span>
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleGuestLogin}
+                  disabled={loading}
+                  className="bg-white hover:bg-blue-600 hover:text-white text-blue-600 text-[10px] font-black px-4 py-2.5 rounded-xl border border-blue-100 shadow-sm transition-all active:scale-95 whitespace-nowrap uppercase tracking-wider"
+                >
+                  Probar ahora
+                </button>
+              </div>
+            </div>
+          </motion.div>
 
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="space-y-2">
