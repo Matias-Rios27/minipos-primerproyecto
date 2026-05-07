@@ -3,6 +3,9 @@
 import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import { 
+  deleteNotificacion 
+} from "@/lib/api";
 
 // Interfaz para el tipado de alertas
 interface Alerta {
