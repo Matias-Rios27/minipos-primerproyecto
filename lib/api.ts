@@ -35,6 +35,17 @@ export const getCategorias = async () => (await api.get('/api/categorias')).data
 
 export const getProveedores = async () => (await api.get('/api/proveedores')).data;
 
+export const createProveedor = async (data: any) => {
+  return (await api.post('/api/proveedores', data)).data;
+};
+
+export const updateProveedor = async (id: number, data: any) => {
+  return (await api.put(`/api/proveedores/${id}`, data)).data;
+};
+
+export const deleteProveedor = async (id: number) => {
+  return (await api.delete(`/api/proveedores/${id}`)).data;
+};
 
 export const getVentas = async () => {
   return (await api.get('/api/ventas')).data;

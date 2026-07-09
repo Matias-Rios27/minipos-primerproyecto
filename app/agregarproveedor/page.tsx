@@ -4,7 +4,8 @@ import { useState, useEffect, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { 
-  deleteNotificacion 
+  deleteNotificacion,
+  createProveedor
 } from "@/lib/api";
 
 import { Alerta } from "@/types/types";
@@ -19,6 +20,15 @@ export default function AgregarProveedorPage() {
   const [showNotificaciones, setShowNotificaciones] = useState(false);
   const [alertas, setAlertas] = useState<Alerta[]>([]);
   const notifRef = useRef<HTMLDivElement>(null);
+
+  // ESTADO DEL FORMULARIO
+  const [formData, setFormData] = useState({
+    nombre: "",
+    telefono: "",
+    email: "",
+    direccion: ""
+  });
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   // 1. SINCRONIZACIÓN Y PERMANENCIA DEL TEMA + NOTIFICACIONES
   useEffect(() => {
@@ -86,6 +96,28 @@ export default function AgregarProveedorPage() {
       setAlertas(prev => prev.filter(a => a.notificacion_id !== id));
     } catch (error) {
       console.error("Error al eliminar notificación:", error);
+    }
+  };
+
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    const { name, value } = e.target;
+    setFormData(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.nombre) return alert("El nombre es obligatorio");
+    
+    setIsSubmitting(true);
+    try {
+      await createProveedor(formData);
+      alert("Proveedor vinculado exitosamente");
+      router.push("/listaproveedores");
+    } catch (error) {
+      console.error("Error al crear proveedor:", error);
+      alert("Error al vincular el proveedor");
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -214,93 +246,80 @@ export default function AgregarProveedorPage() {
               </div>
             </div>
 
-            <form className="p-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+            <form onSubmit={handleSubmit} className="p-10 flex flex-col gap-8">
               
-              {/* COLUMNA LATERAL: LOGO O AVATAR */}
-              <div className="md:col-span-1 flex flex-col gap-4">
-                <label className={labelClass} style={{ color: theme.textMuted }}>Logo Corporativo</label>
-                <div 
-                  className="aspect-square rounded-3xl border-2 border-dashed flex flex-col items-center justify-center p-4 transition-all group cursor-pointer"
-                  style={{ borderColor: theme.border, backgroundColor: theme.subtle }}
-                >
-                  <span className="text-4xl mb-4 group-hover:scale-110 transition-transform">🏢</span>
-                  <p className="text-[10px] font-black uppercase text-center opacity-40 px-4">Subir logo de empresa</p>
-                </div>
-                <div className="p-4 rounded-2xl border" style={{ borderColor: theme.border, backgroundColor: theme.subtle }}>
-                   <p className="text-[9px] font-black uppercase opacity-60 mb-2">Calificación Interna</p>
-                   <div className="flex gap-1 text-amber-500">⭐⭐⭐⭐⭐</div>
-                </div>
-              </div>
-
               {/* CAMPOS DE DATOS */}
-              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div className="md:col-span-2">
                   <label className={labelClass} style={{ color: theme.textMuted }}>Razón Social / Nombre Empresa</label>
-                  <input type="text" placeholder="EJ: DISTRIBUIDORA DE BEBIDAS SPA" className={inputClass}
-                    style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }} />
+                  <input 
+                    type="text" 
+                    name="nombre"
+                    value={formData.nombre}
+                    onChange={handleChange}
+                    placeholder="EJ: DISTRIBUIDORA DE BEBIDAS SPA" 
+                    className={inputClass}
+                    style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }} 
+                  />
                 </div>
 
-                <div>
-                  <label className={labelClass} style={{ color: theme.textMuted }}>RUT Empresa</label>
-                  <input type="text" placeholder="12.345.678-9" className={inputClass}
-                    style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }} />
-                </div>
-
-                <div>
-                  <label className={labelClass} style={{ color: theme.textMuted }}>Categoría de Suministro</label>
-                  <select className={inputClass} style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }}>
-                    <option>Bebidas y Alcohol</option>
-                    <option>Abarrotes</option>
-                    <option>Limpieza</option>
-                    <option>Congelados</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label className={labelClass} style={{ color: theme.textMuted }}>Nombre de Contacto</label>
-                  <input type="text" placeholder="Ej: Juan Carlos Pérez" className={inputClass}
-                    style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }} />
-                </div>
 
                 <div>
                   <label className={labelClass} style={{ color: theme.textMuted }}>Teléfono de Pedidos</label>
-                  <input type="tel" placeholder="+56 9 ..." className={inputClass}
-                    style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }} />
+                  <input 
+                    type="tel" 
+                    name="telefono"
+                    value={formData.telefono}
+                    onChange={handleChange}
+                    placeholder="+56 9 ..." 
+                    className={inputClass}
+                    style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }} 
+                  />
                 </div>
 
                 <div className="md:col-span-2">
                   <label className={labelClass} style={{ color: theme.textMuted }}>Correo Electrónico para Facturación</label>
-                  <input type="email" placeholder="ventas@proveedor.cl" className={inputClass}
-                    style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }} />
+                  <input 
+                    type="email" 
+                    name="email"
+                    value={formData.email}
+                    onChange={handleChange}
+                    placeholder="ventas@proveedor.cl" 
+                    className={inputClass}
+                    style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }} 
+                  />
                 </div>
 
                 <div className="md:col-span-2">
                   <label className={labelClass} style={{ color: theme.textMuted }}>Dirección de Despacho / Oficina</label>
-                  <input type="text" placeholder="Av. Principal 123, Santiago" className={inputClass}
-                    style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }} />
+                  <input 
+                    type="text" 
+                    name="direccion"
+                    value={formData.direccion}
+                    onChange={handleChange}
+                    placeholder="Av. Principal 123, Santiago" 
+                    className={inputClass}
+                    style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }} 
+                  />
                 </div>
 
-                <div>
-                  <label className={labelClass} style={{ color: theme.textMuted }}>Plazo de Pago (Días)</label>
-                  <input type="number" placeholder="Ej: 30" className={inputClass}
-                    style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }} />
-                </div>
-
-                <div className="flex items-center gap-3 p-4 rounded-2xl border-2 border-dashed mt-2" style={{ borderColor: theme.border }}>
-                   <input type="checkbox" id="pago-transf" className="w-6 h-6 rounded-lg accent-emerald-600" />
-                   <label htmlFor="pago-transf" className="text-[10px] font-black uppercase cursor-pointer opacity-70">
-                     Acepta Transferencia Electrónica
-                   </label>
-                </div>
               </div>
 
               {/* BOTONES DE ACCIÓN */}
-              <div className="md:col-span-3 pt-6 mt-6 border-t flex gap-4" style={{ borderColor: theme.border }}>
-                <button type="submit" className="flex-1 bg-emerald-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-900/20 active:scale-[0.98]">
-                  🤝 Vincular Nuevo Proveedor
+              <div className="pt-6 mt-6 border-t flex gap-4" style={{ borderColor: theme.border }}>
+                <button 
+                  type="submit" 
+                  disabled={isSubmitting}
+                  className="flex-1 bg-emerald-600 text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-emerald-700 transition-all shadow-xl shadow-emerald-900/20 active:scale-[0.98] disabled:opacity-50"
+                >
+                  {isSubmitting ? "Vinculando..." : "🤝 Vincular Nuevo Proveedor"}
                 </button>
-                <button type="reset" className="px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] border transition-all active:scale-95"
-                  style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.textMuted }}>
+                <button 
+                  type="reset" 
+                  onClick={() => setFormData({ nombre: "", telefono: "", email: "", direccion: "" })}
+                  className="px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] border transition-all active:scale-95"
+                  style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.textMuted }}
+                >
                   Limpiar Formulario
                 </button>
               </div>

@@ -21,6 +21,10 @@ export interface Categoria {
 export interface Proveedor {
   proveedor_id: number;
   nombre: string;
+  telefono?: string;
+  email?: string;
+  direccion?: string;
+  activo?: boolean;
 }
 
 export interface Venta {
