@@ -56,49 +56,50 @@ export default function LoginPage() {
     }
   }, [router]);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setLoading(true);
-    setError("");
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setLoading(true);
+  setError("");
 
-    try {
-      const response = await api.post("/api/auth/login", { email, password });
-      const { token, user } = response.data;
+  try {
+    const response = await api.post("/api/auth/login", { email, password });
+    const { token, user } = response.data;
 
-      // 2. Obtenemos el ID verificando ambas posibilidades de nombre
-      const activeId = user?.usuario_id || user?.id;
-      const nombreUsuario = user?.nombre || "Usuario";
+    const activeId = user?.usuario_id || user?.id;
+    const nombreUsuario = user?.nombre || "Usuario";
 
-      const storage = rememberMe ? localStorage : sessionStorage;
+    const storage = rememberMe ? localStorage : sessionStorage;
+    const otherStorage = rememberMe ? sessionStorage : localStorage;
 
-      if (token) storage.setItem("token", token);
-      storage.setItem("user_name", nombreUsuario);
+    // 🔑 Limpia el storage contrario para que no queden datos de otra sesión/cuenta
+    otherStorage.removeItem("token");
+    otherStorage.removeItem("user_name");
+    otherStorage.removeItem("user_id");
 
-      // 3. GUARDADO CRÍTICO: Solo guardamos si el ID existe
-      if (activeId) {
-        storage.setItem("user_id", activeId.toString());
-      } else {
-        console.error(
-          "El backend no envió el ID del usuario dentro del objeto user",
-          user,
-        );
-      }
+    if (token) storage.setItem("token", token);
+    storage.setItem("user_name", nombreUsuario);
 
-      if (rememberMe) {
-        localStorage.setItem("remembered_email", email);
-      } else {
-        localStorage.removeItem("remembered_email");
-      }
-
-      setSuccessMsg(`Sesión iniciada: Hola, ${nombreUsuario}`);
-      setTimeout(() => router.push("/Main"), 1500);
-    } catch (err: any) {
-      setError(err.response?.data?.message || "Error de autenticación");
-      setTimeout(() => setError(""), 4000);
-    } finally {
-      setLoading(false);
+    if (activeId) {
+      storage.setItem("user_id", activeId.toString());
+    } else {
+      console.error("El backend no envió el ID del usuario dentro del objeto user", user);
     }
-  };
+
+    if (rememberMe) {
+      localStorage.setItem("remembered_email", email);
+    } else {
+      localStorage.removeItem("remembered_email");
+    }
+
+    setSuccessMsg(`Sesión iniciada: Hola, ${nombreUsuario}`);
+    setTimeout(() => router.push("/Main"), 1500);
+  } catch (err: any) {
+    setError(err.response?.data?.message || "Error de autenticación");
+    setTimeout(() => setError(""), 4000);
+  } finally {
+    setLoading(false);
+  }
+};
 
   const handleGuestLogin = () => {
     setEmail("portafolio@minipos.cl");

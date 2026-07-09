@@ -257,7 +257,6 @@ export default function SalesPage() {
       setIsProcessing(false);
     }
   };
-
   
   const handleDeleteNotificacion = async (id: number) => {
     try {
@@ -267,8 +266,6 @@ export default function SalesPage() {
       console.error("Error al eliminar notificación:", error);
     }
   };
-
-
 
   return (
     <ProtectedRoute>
