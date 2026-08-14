@@ -3,8 +3,8 @@
 import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { getNotificaciones, deleteNotificacion } from "@/lib/api";
-import { Alerta } from "@/types/types";
+import { getNotificaciones, deleteNotificacion, getProveedores } from "@/lib/api";
+import { Alerta, Proveedor } from "@/types/types";
 
 export default function ProvidersPage() {
   const router = useRouter();
@@ -15,6 +15,8 @@ export default function ProvidersPage() {
   // Estados para notificaciones
   const [alertas, setAlertas] = useState<Alerta[]>([]);
   const [showNotificaciones, setShowNotificaciones] = useState(false);
+  const [providers, setProviders] = useState<Proveedor[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // 1. SINCRONIZACIÓN Y PERMANENCIA DEL TEMA
   useEffect(() => {
@@ -44,7 +46,20 @@ export default function ProvidersPage() {
         console.error("Error cargando alertas", e);
       }
     };
+
+    const loadProviders = async () => {
+      try {
+        const data = await getProveedores();
+        setProviders(data || []);
+      } catch (e) {
+        console.error("Error cargando proveedores", e);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
     loadAlerts();
+    loadProviders();
 
     return () => {
       observer.disconnect();
@@ -76,18 +91,11 @@ export default function ProvidersPage() {
     tableRow: isDark ? "hover:bg-blue-900/10" : "hover:bg-blue-50/30"
   }), [isDark]);
 
-  const providers = [
-    { id: 1, name: "TAL TAL", contact: "Juan Pérez", phone: "+56 9 1234 5678", email: "ventas@taltal.cl", category: "Bebidas", rating: 4.8 },
-    { id: 2, name: "Evercrisp", contact: "María Soto", phone: "+56 2 2837 4000", email: "pedidos@evercrisp.cl", category: "Snacks", rating: 4.5 },
-    { id: 3, name: "Unilever", contact: "Ricardo Lagos", phone: "+56 2 2700 1122", email: "soporte@unilever.com", category: "Limpieza", rating: 4.9 },
-    { id: 4, name: "CCU Chile", contact: "Ana Dornell", phone: "+56 9 8877 6655", email: "contacto@ccu.cl", category: "Bebidas", rating: 4.2 },
-  ];
 
   // Filtrado de búsqueda
   const filteredProviders = providers.filter(p => 
-    p.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.category.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    p.contact.toLowerCase().includes(searchTerm.toLowerCase())
+    p.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
+    (p.email && p.email.toLowerCase().includes(searchTerm.toLowerCase()))
   );
 
   
@@ -237,8 +245,7 @@ export default function ProvidersPage() {
               <thead>
                 <tr style={{ backgroundColor: theme.subtle }}>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: theme.textMuted }}>Empresa</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: theme.textMuted }}>Contacto Directo</th>
-                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: theme.textMuted }}>Categoría</th>
+                  <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest" style={{ color: theme.textMuted }}>Dirección</th>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-center" style={{ color: theme.textMuted }}>Teléfono</th>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-center" style={{ color: theme.textMuted }}>Email</th>
                   <th className="px-6 py-5 text-[10px] font-black uppercase tracking-widest text-right" style={{ color: theme.textMuted }}>Acciones</th>
@@ -248,7 +255,7 @@ export default function ProvidersPage() {
                 <AnimatePresence>
                   {filteredProviders.map((p) => (
                     <motion.tr 
-                      key={p.id}
+                      key={p.proveedor_id}
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       className={`transition-colors group ${theme.tableRow}`}
@@ -259,23 +266,16 @@ export default function ProvidersPage() {
                             <span className="text-xl">🏢</span>
                           </div>
                           <div>
-                            <p className="font-bold text-sm">{p.name}</p>
-                            <p className="text-[10px] font-bold text-emerald-500">⭐ {p.rating} / 5.0</p>
+                            <p className="font-bold text-sm">{p.nombre}</p>
+                            <p className="text-[10px] font-bold text-emerald-500">⭐ 5.0 / 5.0</p>
                           </div>
                         </div>
                       </td>
                       <td className="px-6 py-4">
-                        <span className="font-medium text-sm">{p.contact}</span>
-                      </td>
-                      <td className="px-6 py-4">
-                        <span className={`px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-tighter ${
-                            isDark ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600'
-                        }`}>
-                          {p.category}
-                        </span>
+                        <span className="font-medium text-sm">{p.direccion || "N/A"}</span>
                       </td>
                       <td className="px-6 py-4 text-center text-sm font-bold" style={{ color: theme.textMuted }}>
-                        {p.phone}
+                        {p.telefono || "N/A"}
                       </td>
                       <td className="px-6 py-4 text-center text-sm font-medium" style={{ color: theme.textMuted }}>
                         {p.email}
@@ -283,7 +283,7 @@ export default function ProvidersPage() {
                       <td className="px-6 py-4 text-right">
                         <div className="flex justify-end gap-2 opacity-0 group-hover:opacity-100 transition-all">
                           <button className="p-2.5 bg-white border border-slate-200 rounded-xl text-blue-600 hover:bg-blue-50 shadow-sm active:scale-90" style={isDark ? {backgroundColor: "#1F2937", borderColor: "#374151"} : {}}>📞</button>
-                          <button onClick={() => router.push("/editarproveedor")} className="p-2.5 bg-white border border-slate-200 rounded-xl text-blue-600 hover:bg-blue-50 shadow-sm active:scale-90" style={isDark ? {backgroundColor: "#1F2937", borderColor: "#374151"} : {}}>✏️</button>
+                          <button onClick={() => router.push(`/editarproveedor/${p.proveedor_id}`)} className="p-2.5 bg-white border border-slate-200 rounded-xl text-blue-600 hover:bg-blue-50 shadow-sm active:scale-90" style={isDark ? {backgroundColor: "#1F2937", borderColor: "#374151"} : {}}>✏️</button>
                         </div>
                       </td>
                     </motion.tr>

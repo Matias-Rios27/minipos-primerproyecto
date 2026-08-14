@@ -177,13 +177,42 @@ export default function SalesPage() {
         (item) => item.producto_id === product.producto_id,
       );
       if (existingItem) {
+        if (existingItem.cantidad >= product.stock) {
+          alert(`⚠️ No puedes agregar más unidades. El stock máximo disponible es ${product.stock} unids.`);
+          return prevCart;
+        }
         return prevCart.map((item) =>
           item.producto_id === product.producto_id
             ? { ...item, cantidad: item.cantidad + 1 }
             : item,
         );
       }
+      if (product.stock <= 0) {
+        alert("⚠️ Este producto no tiene stock disponible.");
+        return prevCart;
+      }
       return [...prevCart, { ...product, cantidad: 1 }];
+    });
+  };
+
+  const updateCartQuantity = (producto_id: number, delta: number) => {
+    setCart((prevCart) => {
+      const existing = prevCart.find((item) => item.producto_id === producto_id);
+      if (!existing) return prevCart;
+
+      const newQty = existing.cantidad + delta;
+      if (newQty <= 0) {
+        return prevCart.filter((item) => item.producto_id !== producto_id);
+      }
+
+      if (delta > 0 && newQty > existing.stock) {
+        alert(`⚠️ No puedes superar el stock máximo disponible (${existing.stock} unids).`);
+        return prevCart;
+      }
+
+      return prevCart.map((item) =>
+        item.producto_id === producto_id ? { ...item, cantidad: newQty } : item
+      );
     });
   };
 

@@ -105,7 +105,7 @@ const handleSubmit = async (e: React.FormEvent) => {
     setEmail("portafolio@minipos.cl");
     setPassword("portafolio2026");
     setRememberMe(false);
-    
+
     // Pequeño delay para que el usuario vea que se llenan los campos
     setTimeout(() => {
       const form = document.querySelector("form");
@@ -143,7 +143,7 @@ const handleSubmit = async (e: React.FormEvent) => {
           </div>
 
           {/* ACCESO PORTAFOLIO / GUEST */}
-          <motion.div 
+          <motion.div
             initial={{ opacity: 0, y: 10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
@@ -151,10 +151,10 @@ const handleSubmit = async (e: React.FormEvent) => {
           >
             <div className="absolute top-0 right-0 p-3 opacity-10 group-hover:opacity-20 transition-opacity">
               <svg width="40" height="40" viewBox="0 0 24 24" fill="currentColor" className="text-blue-600">
-                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z"/>
+                <path d="M12 12c2.21 0 4-1.79 4-4s-1.79-4-4-4-4 1.79-4 4 1.79 4 4 4zm0 2c-2.67 0-8 1.34-8 4v2h16v-2c0-2.66-5.33-4-8-4z" />
               </svg>
             </div>
-            
+
             <div className="relative z-10">
               <h3 className="text-[10px] font-black text-blue-600 uppercase tracking-[0.2em] mb-3">
                 Acceso Portafolio

@@ -21,6 +21,11 @@ export interface Categoria {
 export interface Proveedor {
   proveedor_id: number;
   nombre: string;
+  telefono?: string;
+  email?: string;
+  direccion?: string;
+  activo?: boolean;
+  fecha_creacion?: number;
 }
 
 export interface Venta {
@@ -28,7 +33,7 @@ export interface Venta {
   usuario_id: number;
   producto_id: number;
   total: number;
-  fecha_venta: string; 
+  fecha_venta: string;
   usuario_nombre?: string;
 }
 
@@ -45,7 +50,7 @@ export interface DetalleVenta {
   cantidad: number;
   precio_unitario: number;
   subtotal: number;
-  nombre_producto?: string; 
+  nombre_producto?: string;
   imagen_url?: string;
 }
 
@@ -61,7 +66,6 @@ export interface CartItem extends Producto {
   cantidad: number;
 }
 
-// Interfaz para el formulario de nuevo producto
 export interface ProductoFormInput {
   nombre: string;
   precio: string | number;
@@ -69,4 +73,77 @@ export interface ProductoFormInput {
   stock_minimo: string | number;
   categoria_id: string | number;
   proveedor_id: string | number;
+}
+
+// ── Gastos ────────────────────────────────────────────────────────────────
+
+export interface CategoriaGasto {
+  categoria_id: number;
+  nombre: string;
+}
+
+export interface Gasto {
+  gasto_id: number;
+  usuario_id?: number;
+  categoria_id?: number;
+  descripcion: string;
+  monto: number;
+  fecha_gasto: string;
+  categoria_nombre?: string;
+  usuario_nombre?: string;
+}
+
+// ── Dashboard ─────────────────────────────────────────────────────────────
+
+export interface TopProducto {
+  producto_id: number;
+  nombre: string;
+  total_vendido: number;
+  total_monto: number;
+  porcentaje: number;
+}
+
+export interface FlujoCajaPunto {
+  label: string;
+  ingresos: number;
+  num_ventas: number;
+}
+
+export interface GastoDistribucion {
+  categoria: string;
+  total: number;
+  cantidad?: number;
+  porcentaje: number;
+}
+
+export interface DashboardStats {
+  periodo: string;
+  totalIngresos: number;
+  totalVentas: number;
+  totalGastos: number;
+  utilidadNeta: number;
+  ticketPromedio: number;
+  margenGanancia: number;
+  topProductos: TopProducto[];
+  flujoCaja: FlujoCajaPunto[];
+  gastosDistribucion: GastoDistribucion[];
+}
+
+// ── Balance ───────────────────────────────────────────────────────────────
+
+export interface BalanceMes {
+  mes: string;
+  ingresos: number;
+  gastos: number;
+  utilidad: number;
+  margen: number;
+  ventas: number;
+}
+
+export interface BalanceHistorico {
+  mesActual: BalanceMes;
+  cambioIngresos: number;
+  cambioGastos: number;
+  historico: BalanceMes[];
+  gastosDistribucion: GastoDistribucion[];
 }
