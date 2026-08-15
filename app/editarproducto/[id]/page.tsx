@@ -4,6 +4,7 @@ import { useState, useEffect, useRef, ChangeEvent } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { getProductById, updateProducto, getNotificaciones, deleteNotificacion, deleteProduct, getProveedores, getCategorias } from "@/lib/api";
 import { Categoria, Alerta } from "@/types/types";
+import Navbar from "@/app/components/Navbar";
 
 interface Proveedor {
   proveedor_id: number;
@@ -185,35 +186,7 @@ export default function EditarProductoPage() {
     <div className="flex flex-col h-screen font-sans overflow-hidden transition-colors duration-500"
       style={{ backgroundColor: theme.bg, color: theme.text }}>
       
-      <header className="h-20 backdrop-blur-md border-b px-8 flex justify-between items-center z-30 shrink-0"
-        style={{ backgroundColor: theme.header, borderColor: theme.border }}>
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="bg-[#1E3A5F] text-white p-1.5 rounded-lg font-black text-xs">MP</div>
-            <h1 className="text-lg font-bold">Gestión de Inventario</h1>
-          </div>
-          <div className="flex items-center gap-2 text-xs font-medium" style={{ color: theme.textMuted }}>
-            <span className="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-            Editando Registro • ID: #{id}
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className="hidden md:flex p-1 rounded-xl mr-4 border" style={{ backgroundColor: theme.subtle, borderColor: theme.border }}>
-            <button onClick={() => router.push("/Main")} className="px-4 py-2 text-xs font-bold opacity-70">Punto de Venta</button>
-            <button onClick={() => router.push("/inventario")} className="px-4 py-2 text-xs font-bold opacity-70">Inventario</button>
-            <button className="px-4 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm" style={isDark ? { backgroundColor: "#334155", color: "#60A5FA" } : {}}>Editar</button>
-          </div>
-
-          <button onClick={toggleDarkMode} className="p-2.5 rounded-xl border transition-all text-lg"
-            style={{ backgroundColor: theme.card, borderColor: theme.border }}>
-            {isDark ? "☀️" : "🌙"}
-          </button>
-          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200">
-            {userName.substring(0, 2).toUpperCase()}
-          </div>          
-        </div>
-      </header>
+      <Navbar activePage="inventory" />
 
       <main className="flex-1 overflow-y-auto p-8">
         <div className="max-w-6xl mx-auto">
