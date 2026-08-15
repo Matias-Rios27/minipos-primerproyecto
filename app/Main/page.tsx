@@ -270,14 +270,35 @@ export default function SalesPage() {
 
       const response = await createVenta(ventaData);
 
+      // Actualizamos inmediatamente el stock en el estado local
+      setProducts((prev) =>
+        prev.map((p) => {
+          const itemVendido = copiaCarritoParaBoleta.find((item) => item.producto_id === p.producto_id);
+          if (itemVendido) {
+            return { ...p, stock: Math.max(0, p.stock - itemVendido.cantidad) };
+          }
+          return p;
+        })
+      );
+
+      // Sincronizamos con la base de datos de Neon
+      try {
+        const freshProducts = await getProducts();
+        if (Array.isArray(freshProducts)) {
+          setProducts(freshProducts);
+        }
+      } catch (e) {
+        console.error("Error refrescando productos desde BD:", e);
+      }
+
       // IMPORTANTE: Guardamos la info que devuelve el servidor
       setVentaExitosaInfo({
-        id: response.id || response.venta_id, // Depende de cómo lo envíe tu backend
+        id: response.id || response.venta_id,
         total: totalVentaCopia,
         items: copiaCarritoParaBoleta,
       });
 
-      setCart([]); // Ahora sí limpiamos el carrito
+      setCart([]);
       setShowConfirmModal(false);
       setShowSuccessModal(true);
     } catch (error: any) {
@@ -384,7 +405,6 @@ export default function SalesPage() {
                 {products
                   .filter((p) => {
                     const isVisible = p.activo === true;
-                    const hasStock = p.stock > 0;
                     const matchesSearch = p.nombre
                       ?.toLowerCase()
                       .includes(searchTerm.toLowerCase());
@@ -399,7 +419,7 @@ export default function SalesPage() {
                     const matchesCategory =
                       selectedCategory === "Todos los Artículos" ||
                       p.categoria_id === categoryMap[selectedCategory];
-                    return isVisible && hasStock && matchesSearch && matchesCategory;
+                    return isVisible && matchesSearch && matchesCategory;
                   })
                   .map((product) => {
                     const itemEnCarrito = cart.find((item) => item.producto_id === product.producto_id);

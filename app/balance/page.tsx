@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import { getBalanceHistorico, getNotificaciones, deleteNotificacion } from "@/lib/api";
 import { BalanceHistorico, BalanceMes, Alerta } from "@/types/types";
+import Navbar from "../components/Navbar";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -170,67 +171,7 @@ export default function BalancePage() {
       style={{ backgroundColor: theme.bg, color: theme.text }}
     >
       {/* ── HEADER ── */}
-      <header
-        className={`h-20 backdrop-blur-md border-b px-8 flex justify-between items-center z-30 shrink-0 ${
-          isMounted ? "transition-colors duration-500" : ""
-        }`}
-        style={{ backgroundColor: theme.header, borderColor: theme.border }}
-      >
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="bg-[#1E3A5F] text-white p-1.5 rounded-lg font-black text-xs">MP</div>
-            <h1 className="text-lg font-bold">Balance Financiero</h1>
-          </div>
-          <div className="flex items-center gap-2 text-xs font-medium" style={{ color: theme.textMuted }}>
-            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse" />
-            Estado de Resultados • Sucursal Quilicura
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div
-            className={`hidden md:flex p-1 rounded-xl mr-4 border ${isMounted ? "transition-colors" : ""}`}
-            style={{ backgroundColor: theme.subtle, borderColor: theme.border }}
-          >
-            <button onClick={() => router.push("/Main")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Punto de Venta</button>
-            <button onClick={() => router.push("/historial")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Historial</button>
-            <button onClick={() => router.push("/inventario")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Inventario</button>
-            <button onClick={() => router.push("/dashboard")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Dashboard</button>
-            <button
-              className="px-4 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm"
-              style={isDark ? { backgroundColor: "#334155", color: "#60A5FA" } : {}}
-            >
-              Balance
-            </button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={toggleDarkMode}
-              className="p-2.5 rounded-xl border transition-all text-lg shadow-sm active:scale-90"
-              style={{ backgroundColor: theme.card, borderColor: theme.border }}
-            >
-              {isDark ? "☀️" : "🌙"}
-            </button>
-            <div className="relative">
-              <button
-                className="p-2.5 rounded-xl border transition-all relative active:scale-90"
-                style={{ backgroundColor: theme.card, borderColor: theme.border }}
-              >
-                <span className="text-lg italic">🔔</span>
-                {alertas.length > 0 && (
-                  <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[10px] text-white rounded-full flex items-center justify-center font-bold border-2 border-white">
-                    {alertas.length}
-                  </span>
-                )}
-              </button>
-            </div>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shadow-sm">
-            {userName.substring(0, 2).toUpperCase()}
-          </div>
-        </div>
-      </header>
+      <Navbar activePage="balance" />
 
       {/* ── MAIN ── */}
       <main className="flex-1 overflow-y-auto p-8 custom-scrollbar">
