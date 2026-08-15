@@ -6,6 +6,7 @@ import { useRouter } from "next/navigation";
 import { getProducts, getNotificaciones, deleteNotificacion, createVenta } from "@/lib/api";
 import { Producto, Alerta, CartItem, VentaExitosa } from "@/types/types";
 import ProtectedRoute from "../components/ProtectedRoute";
+import Navbar from "../components/Navbar";
 import jsPDF from "jspdf";
 import autoTable from "jspdf-autotable";
 
@@ -358,154 +359,7 @@ export default function SalesPage() {
 
         {/* 2. CONTENIDO PRINCIPAL */}
         <main className="flex-1 flex flex-col overflow-hidden">
-          <header
-            className={`h-20 border-b px-8 flex justify-between items-center z-30 ${
-              isMounted ? "transition-colors duration-500" : "transition-none"
-            } ${isDark ? "bg-[#111827]/80 border-white/5" : "bg-white/80 border-slate-200"} backdrop-blur-md`}
-          >
-            <div>
-              <h1
-                className={`text-lg font-bold ${isDark ? "text-white" : "text-[#275791]"}`}
-              >
-                Punto de Venta
-              </h1>
-              <div className="flex items-center gap-2 text-[10px] text-slate-500 font-black uppercase tracking-widest">
-                <span className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></span>
-                Terminal Activa • Quilicura_POS_01
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              {/* Botones de Navegación */}
-              <div
-                className={`hidden md:flex p-1 rounded-xl border ${isDark ? "bg-white/5 border-white/10" : "bg-slate-100 border-slate-200"}`}
-              >
-                <button
-                  className="px-4 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm"
-                  style={
-                    isDark
-                      ? { backgroundColor: "#334155", color: "#60A5FA" }
-                      : {}
-                  }
-                >
-                  Punto de Venta
-                </button>
-                <button
-                  onClick={() => router.push("/historial")}
-                  className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity"
-                >
-                  Historial
-                </button>
-                <button
-                  onClick={() => router.push("/inventario")}
-                  className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity"
-                >
-                  Inventario
-                </button>
-                <button
-                  onClick={() => router.push("/dashboard")}
-                  className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity"
-                >
-                  Dashboard
-                </button>
-              </div>
-
-              {/* CONTENEDOR DE NOTIFICACIONES */}
-              {/* BOTÓN Y DROPDOWN NOTIFICACIONES */}
-              <div className="relative">
-                <button
-                  onClick={() => setShowNotificaciones(!showNotificaciones)}
-                  className="p-2.5 rounded-xl border transition-all relative active:scale-90 hover:bg-slate-500/5"
-                  style={{
-                    backgroundColor: theme.card,
-                    borderColor: theme.border,
-                  }}
-                >
-                  <span className="text-lg italic">🔔</span>
-                  {alertas.length > 0 && (
-                    <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[10px] text-white rounded-full flex items-center justify-center font-bold border-2 border-white dark:border-[#111827]">
-                      {alertas.length}
-                    </span>
-                  )}
-                </button>
-
-                <AnimatePresence>
-                  {showNotificaciones && (
-                    <motion.div
-                      initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                      className="absolute right-0 mt-2 w-80 rounded-3xl border shadow-2xl z-50 overflow-hidden"
-                      style={{
-                        backgroundColor: theme.card,
-                        borderColor: theme.border,
-                      }}
-                    >
-                      <div
-                        className="p-4 border-b flex justify-between items-center"
-                        style={{
-                          borderColor: theme.border,
-                          backgroundColor: theme.subtle,
-                        }}
-                      >
-                        <h3 className="text-xs font-black uppercase tracking-widest">
-                          Alertas Recientes
-                        </h3>
-                        <span className="px-2 py-0.5 rounded-full bg-rose-500 text-[10px] text-white font-bold">
-                          {alertas.length}
-                        </span>
-                      </div>
-                      <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
-                        {alertas.length > 0 ? (
-                          alertas.map((alerta) => (
-                            <div
-                              key={alerta.notificacion_id}
-                              className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors"
-                              style={{ borderColor: theme.border }}
-                            >
-                              <div className="flex gap-3 text-xs items-center justify-between">
-                                <span className="text-lg">
-                                  {alerta.tipo === "stock" ? "📉" : "⚠️"}
-                                </span>
-                                <div className="flex-1">
-                                  <p className="font-bold">{alerta.mensaje}</p>
-                                  <p className="opacity-50 mt-1">
-                                    Revisar stock en Inventario
-                                  </p>
-                                </div>
-                              
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); handleDeleteNotificacion(alerta.notificacion_id); }}
-                                className="text-rose-500 hover:text-rose-700 bg-rose-500/10 hover:bg-rose-500/20 p-1.5 rounded-lg transition-colors ml-2"
-                                title="Eliminar notificación"
-                              >
-                                ❌
-                              </button>
-                            </div>
-                            </div>
-                          ))
-                        ) : (
-                          <div className="p-10 text-center opacity-40 text-xs font-bold">
-                            Sin alertas pendientes
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {/* Botón Dark Mode */}
-              <button
-                onClick={toggleDarkMode}
-                className={`p-2.5 rounded-xl border transition-all active:scale-90 ${isDark ? "bg-white/5 border-white/10 text-yellow-400" : "bg-slate-50 border-slate-200 text-slate-600"}`}
-              >
-                {isDark ? "☀️" : "🌙"}
-              </button>
-              <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shadow-sm">
-                {user_name.substring(0, 2).toUpperCase()}
-              </div>
-            </div>
-          </header>
+          <Navbar activePage="pos" />
 
           <div className="flex-1 overflow-y-auto p-8">
             <div className="max-w-7xl mx-auto">
@@ -547,124 +401,140 @@ export default function SalesPage() {
                       p.categoria_id === categoryMap[selectedCategory];
                     return isVisible && hasStock && matchesSearch && matchesCategory;
                   })
-                  .map((product) => (
-                    <motion.div
-                      key={product.producto_id}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      whileHover={{ y: -4 }}
-                      className={`group relative flex flex-col h-full border transition-all duration-200 ${
-                        isDark
-                          ? "bg-[#1E293B] border-slate-700 shadow-none"
-                          : "bg-white border-slate-200 shadow-sm hover:shadow-md"
-                      } rounded-xl overflow-hidden`}
-                    >
-                      {/* 1. ÁREA DE IMAGEN/ICONO */}
-                      <div
-                        className={`relative aspect-square w-full flex items-center justify-center border-b ${
+                  .map((product) => {
+                    const itemEnCarrito = cart.find((item) => item.producto_id === product.producto_id);
+                    const cantidadEnCarrito = itemEnCarrito ? itemEnCarrito.cantidad : 0;
+                    const stockRestante = Math.max(0, product.stock - cantidadEnCarrito);
+                    const estaAgotado = stockRestante <= 0;
+
+                    return (
+                      <motion.div
+                        key={product.producto_id}
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        whileHover={{ y: -4 }}
+                        className={`group relative flex flex-col h-full border transition-all duration-200 ${
                           isDark
-                            ? "bg-slate-900/50 border-slate-700"
-                            : "bg-slate-50 border-slate-100"
-                        }`}
+                            ? "bg-[#1E293B] border-slate-700 shadow-none"
+                            : "bg-white border-slate-200 shadow-sm hover:shadow-md"
+                        } rounded-xl overflow-hidden`}
                       >
-                        {product.imagen_url ? (
-                          <img
-                            src={
-                              product.imagen_url?.startsWith("http")
-                                ? product.imagen_url
-                                : `https://minipos-primerproyecto-backend.onrender.com${product.imagen_url}`
-                            }
-                            alt={product.nombre}
-                            className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
-                          />
-                        ) : (
-                          <div className="flex flex-col items-center opacity-20">
-                            <span className="text-6xl">📦</span>
-                            <span className="text-[10px] font-bold mt-2">
-                              SIN IMAGEN
-                            </span>
-                          </div>
-                        )}
-
-                        {/* ETIQUETA DE STOCK */}
-                        <div className="absolute top-3 right-3">
-                          <span
-                            className={`text-[9px] font-bold px-2 py-1 rounded-md border backdrop-blur-sm ${
-                              product.stock > product.stock_minimo!
-                                ? "bg-emerald-500/10 text-emerald-600 border-emerald-500/20"
-                                : "bg-amber-500/10 text-amber-600 border-amber-500/20"
-                            }`}
-                          >
-                            {product.stock} UNID.
-                          </span>
-                        </div>
-                      </div>
-
-                      {/* 2. INFORMACIÓN DEL PRODUCTO */}
-                      <div className="p-4 flex flex-col flex-1">
-                        <div className="flex justify-between items-start mb-2">
-                          <span
-                            className={`text-[10px] font-bold tracking-wider uppercase opacity-60 ${isDark ? "text-blue-400" : "text-slate-500"}`}
-                          >
-                            {categories.find((c) => {
-                              const categoryMap: any = {
-                                Bebidas: 1,
-                                Alimentos: 2,
-                                Limpieza: 3,
-                                "Cuidado Personal": 4,
-                                Electronicos: 5,
-                                Mascotas: 7,
-                              };
-                              return (
-                                categoryMap[c.name] === product.categoria_id
-                              );
-                            })?.name || "General"}
-                          </span>
-                          <span className="text-[9px] font-mono opacity-40">
-                            #{String(product.producto_id).padStart(4, "0")}
-                          </span>
-                        </div>
-
-                        <h3
-                          className={`text-sm font-bold leading-snug h-10 line-clamp-2 mb-4 ${
-                            isDark ? "text-slate-100" : "text-slate-800"
+                        {/* 1. ÁREA DE IMAGEN/ICONO */}
+                        <div
+                          className={`relative aspect-square w-full flex items-center justify-center border-b ${
+                            isDark
+                              ? "bg-slate-900/50 border-slate-700"
+                              : "bg-slate-50 border-slate-100"
                           }`}
                         >
-                          {product.nombre}
-                        </h3>
+                          {product.imagen_url ? (
+                            <img
+                              src={
+                                product.imagen_url?.startsWith("http")
+                                  ? product.imagen_url
+                                  : `https://minipos-primerproyecto-backend.onrender.com${product.imagen_url}`
+                              }
+                              alt={product.nombre}
+                              className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-105"
+                            />
+                          ) : (
+                            <div className="flex flex-col items-center opacity-30 text-slate-400">
+                              <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
+                              </svg>
+                              <span className="text-[10px] font-bold mt-2 uppercase tracking-wider">
+                                Sin Imagen
+                              </span>
+                            </div>
+                          )}
 
-                        {/* 3. PRECIO Y ACCIÓN */}
-                        <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-500/10">
-                          <div className="flex flex-col">
-                            <span className="text-[9px] font-bold opacity-40 uppercase">
-                              Precio
-                            </span>
+                          {/* ETIQUETA DE STOCK DINÁMICO */}
+                          <div className="absolute top-3 right-3">
                             <span
-                              className={`text-lg font-black ${isDark ? "text-white" : "text-[#1E3A5F]"}`}
+                              className={`text-[9px] font-extrabold px-2.5 py-1 rounded-lg border backdrop-blur-md ${
+                                estaAgotado
+                                  ? "bg-rose-500/20 text-rose-500 border-rose-500/30"
+                                  : stockRestante > (product.stock_minimo || 0)
+                                    ? "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border-emerald-500/30"
+                                    : "bg-amber-500/15 text-amber-600 dark:text-amber-400 border-amber-500/30"
+                              }`}
                             >
-                              $
-                              {new Intl.NumberFormat("es-CL").format(
-                                product.precio,
-                              )}
+                              {stockRestante} UNID.
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* 2. INFORMACIÓN DEL PRODUCTO */}
+                        <div className="p-4 flex flex-col flex-1">
+                          <div className="flex justify-between items-start mb-2">
+                            <span
+                              className={`text-[10px] font-bold tracking-wider uppercase opacity-60 ${isDark ? "text-blue-400" : "text-slate-500"}`}
+                            >
+                              {categories.find((c) => {
+                                const categoryMap: any = {
+                                  Bebidas: 1,
+                                  Alimentos: 2,
+                                  Limpieza: 3,
+                                  "Cuidado Personal": 4,
+                                  Electronicos: 5,
+                                  Mascotas: 7,
+                                };
+                                return (
+                                  categoryMap[c.name] === product.categoria_id
+                                );
+                              })?.name || "General"}
+                            </span>
+                            <span className="text-[9px] font-mono opacity-40">
+                              #{String(product.producto_id).padStart(4, "0")}
                             </span>
                           </div>
 
-                          <motion.button
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => addToCart(product)}
-                            className={`p-2.5 rounded-lg transition-colors ${
-                              isDark
-                                ? "bg-blue-600 hover:bg-blue-500 text-white"
-                                : "bg-[#1E3A5F] hover:bg-blue-800 text-white"
-                            } shadow-sm`}
-                            title="Añadir al carrito"
+                          <h3
+                            className={`text-sm font-bold leading-snug h-10 line-clamp-2 mb-4 ${
+                              isDark ? "text-slate-100" : "text-slate-800"
+                            }`}
                           >
-                            <span className="text-lg leading-none">🛒</span>
-                          </motion.button>
+                            {product.nombre}
+                          </h3>
+
+                          {/* 3. PRECIO Y ACCIÓN */}
+                          <div className="mt-auto flex items-center justify-between pt-3 border-t border-slate-500/10">
+                            <div className="flex flex-col">
+                              <span className="text-[9px] font-bold opacity-40 uppercase">
+                                Precio
+                              </span>
+                              <span
+                                className={`text-lg font-black ${isDark ? "text-white" : "text-[#1E3A5F]"}`}
+                              >
+                                $
+                                {new Intl.NumberFormat("es-CL").format(
+                                  product.precio,
+                                )}
+                              </span>
+                            </div>
+
+                            <motion.button
+                              whileTap={{ scale: 0.95 }}
+                              disabled={estaAgotado}
+                              onClick={() => addToCart(product)}
+                              className={`p-2.5 rounded-xl transition-all ${
+                                estaAgotado
+                                  ? "bg-slate-300 dark:bg-slate-800 text-slate-400 dark:text-slate-600 cursor-not-allowed"
+                                  : isDark
+                                    ? "bg-blue-600 hover:bg-blue-500 text-white shadow-sm"
+                                    : "bg-[#1E3A5F] hover:bg-blue-800 text-white shadow-sm"
+                              }`}
+                              title={estaAgotado ? "Sin stock disponible" : "Añadir al carrito"}
+                            >
+                              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 100 4 2 2 0 000-4z" />
+                              </svg>
+                            </motion.button>
+                          </div>
                         </div>
-                      </div>
-                    </motion.div>
-                  ))}
+                      </motion.div>
+                    );
+                  })}
               </div>
             </div>
           </div>

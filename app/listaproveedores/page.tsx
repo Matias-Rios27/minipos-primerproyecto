@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { getNotificaciones, deleteNotificacion, getProveedores } from "@/lib/api";
 import { Alerta, Proveedor } from "@/types/types";
+import Navbar from "../components/Navbar";
 
 export default function ProvidersPage() {
   const router = useRouter();
@@ -117,98 +118,7 @@ export default function ProvidersPage() {
     >
       
       {/* HEADER SUPERIOR */}
-      <header 
-        className={`h-20 backdrop-blur-md border-b px-8 flex justify-between items-center z-30 shrink-0 ${isMounted ? "transition-colors duration-500" : "transition-none"}`}
-        style={{ backgroundColor: theme.header, borderColor: theme.border }}
-      >
-        <div>
-          <div className="flex items-center gap-3">
-            <div className="bg-[#1E3A5F] text-white p-1.5 rounded-lg font-black text-xs">MP</div>
-            <h1 className="text-lg font-bold">Directorio de Proveedores</h1>
-          </div>
-          <div className="flex items-center gap-2 text-xs font-medium" style={{ color: theme.textMuted }}>
-            <span className="w-2 h-2 bg-emerald-500 rounded-full animate-pulse"></span>
-            {providers.length} Proveedores activos • Red de suministros
-          </div>
-        </div>
-
-        <div className="flex items-center gap-3">
-          <div className={`hidden md:flex p-1 rounded-xl mr-4 border ${isMounted ? "transition-colors duration-500" : ""}`} style={{ backgroundColor: theme.subtle, borderColor: theme.border }}>
-            <button onClick={() => router.push("/Main")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Punto de Venta</button>
-            <button onClick={() => router.push("/historial")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Historial</button>
-            <button onClick={() => router.push("/inventario")} className="px-4 py-2 text-xs font-bold opacity-70 hover:opacity-100 transition-opacity">Inventario</button>
-            <button className="px-4 py-2 text-xs font-bold bg-white text-blue-600 rounded-lg shadow-sm" style={isDark ? {backgroundColor: "#334155", color: "#60A5FA"} : {}}>Proveedores</button>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button onClick={toggleDarkMode} className="p-2.5 rounded-xl border transition-all text-lg shadow-sm hover:scale-105" style={{ backgroundColor: theme.card, borderColor: theme.border }}>
-              {isDark ? "☀️" : "🌙"}
-            </button>
-
-            {/* BOTÓN Y DROPDOWN DE NOTIFICACIONES */}
-              {/* BOTÓN Y DROPDOWN NOTIFICACIONES */}
-          <div className="relative">
-            <button 
-              onClick={() => setShowNotificaciones(!showNotificaciones)}
-              className="p-2.5 rounded-xl border transition-all relative active:scale-90 hover:bg-slate-500/5" 
-              style={{ backgroundColor: theme.card, borderColor: theme.border }}
-            >
-              <span className="text-lg italic">🔔</span>
-              {alertas.length > 0 && (
-                <span className="absolute -top-1 -right-1 w-4 h-4 bg-rose-500 text-[10px] text-white rounded-full flex items-center justify-center font-bold border-2 border-white dark:border-[#111827]">
-                  {alertas.length}
-                </span>
-              )}
-            </button>
-
-            <AnimatePresence>
-              {showNotificaciones && (
-                <motion.div
-                  initial={{ opacity: 0, y: 10, scale: 0.95 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.95 }}
-                  className="absolute right-0 mt-2 w-80 rounded-3xl border shadow-2xl z-50 overflow-hidden"
-                  style={{ backgroundColor: theme.card, borderColor: theme.border }}
-                >
-                  <div className="p-4 border-b flex justify-between items-center" style={{ borderColor: theme.border, backgroundColor: theme.subtle }}>
-                    <h3 className="text-xs font-black uppercase tracking-widest">Alertas Recientes</h3>
-                    <span className="px-2 py-0.5 rounded-full bg-rose-500 text-[10px] text-white font-bold">{alertas.length}</span>
-                  </div>
-                  <div className="max-h-[350px] overflow-y-auto custom-scrollbar">
-                    {alertas.length > 0 ? (
-                      alertas.map((alerta) => (
-                        <div key={alerta.notificacion_id} className="p-4 border-b last:border-0 hover:bg-slate-500/5 transition-colors" style={{ borderColor: theme.border }}>
-                          <div className="flex gap-3 text-xs items-center justify-between">
-                            <span className="text-lg">{alerta.tipo === 'stock' ? '📉' : '⚠️'}</span>
-                            <div className="flex-1">
-                              <p className="font-bold">{alerta.mensaje}</p>
-                              <p className="opacity-50 mt-1">Revisar stock en Inventario</p>
-                            </div>
-                          
-                              <button 
-                                onClick={(e) => { e.stopPropagation(); handleDeleteNotificacion(alerta.notificacion_id); }}
-                                className="text-rose-500 hover:text-rose-700 bg-rose-500/10 hover:bg-rose-500/20 p-1.5 rounded-lg transition-colors ml-2"
-                                title="Eliminar notificación"
-                              >
-                                ❌
-                              </button>
-                            </div>
-                        </div>
-                      ))
-                    ) : (
-                      <div className="p-10 text-center opacity-40 text-xs font-bold">Sin alertas pendientes</div>
-                    )}
-                  </div>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
-          </div>
-          <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center text-blue-600 font-bold border border-blue-200 shadow-sm">
-            {userName.substring(0, 2).toUpperCase()}
-          </div>
-        </div>
-      </header>
+      <Navbar activePage="providers" />
 
       {/* CONTENIDO PRINCIPAL */}
       <main className="flex-1 overflow-y-auto p-8">
