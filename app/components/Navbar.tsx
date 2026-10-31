@@ -1,9 +1,10 @@
 "use client";
 
+import { useIsDark } from "@/app/components/ThemeProvider";
 import { useState, useEffect, useRef } from "react";
-import { useRouter } from "next/navigation";
+import { usePathname, useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { getNotificaciones, deleteNotificacion } from "@/lib/api";
+import { getNotificaciones, deleteNotificacion, getNombreUsuario } from "@/lib/api";
 import { Alerta } from "@/types/types";
 
 export type ActivePageType =
@@ -17,12 +18,32 @@ export type ActivePageType =
   | "providers";
 
 interface NavbarProps {
+  // Opcional: por defecto se deduce de la URL
   activePage?: ActivePageType;
 }
 
+// Primer segmento de la URL -> seccion del menu que se resalta
+const SECCION_POR_RUTA: Record<string, ActivePageType> = {
+  Main: "pos",
+  inventario: "inventory",
+  agregarproducto: "inventory",
+  editarproducto: "inventory",
+  historial: "history",
+  editarventa: "history",
+  dashboard: "dashboard",
+  gastos: "gastos",
+  balance: "balance",
+  usuarios: "users",
+  listaproveedores: "providers",
+  agregarproveedor: "providers",
+  editarproveedor: "providers",
+};
+
 export default function Navbar({ activePage }: NavbarProps) {
   const router = useRouter();
-  const [isDark, setIsDark] = useState(false);
+  const pathname = usePathname();
+  const paginaActiva = activePage ?? SECCION_POR_RUTA[pathname.split("/")[1]];
+  const [isDark, setIsDark] = useIsDark();
   const [isMounted, setIsMounted] = useState(false);
   const [userName, setUserName] = useState("Usuario");
   const [alertas, setAlertas] = useState<Alerta[]>([]);
@@ -30,25 +51,11 @@ export default function Navbar({ activePage }: NavbarProps) {
   const notifRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
-    const storedUser =
-      typeof window !== "undefined"
-        ? localStorage.getItem("user_name") || sessionStorage.getItem("user_name") || "Admin"
-        : "Admin";
-    setUserName(storedUser);
+    getNombreUsuario().then(setUserName);
 
     const isDarkMode = document.documentElement.classList.contains("dark");
     setIsDark(isDarkMode);
     setIsMounted(true);
-
-    const loadAlerts = async () => {
-      try {
-        const notifyData = await getNotificaciones();
-        setAlertas(notifyData || []);
-      } catch (e) {
-        console.error("Error cargando notificaciones", e);
-      }
-    };
-    loadAlerts();
 
     const handleClickOutside = (event: MouseEvent) => {
       if (notifRef.current && !notifRef.current.contains(event.target as Node)) {
@@ -71,6 +78,13 @@ export default function Navbar({ activePage }: NavbarProps) {
       document.removeEventListener("mousedown", handleClickOutside);
     };
   }, []);
+
+  // El Navbar vive en el layout y no se vuelve a montar: las alertas se refrescan al cambiar de ruta
+  useEffect(() => {
+    getNotificaciones()
+      .then((notifyData) => setAlertas(notifyData || []))
+      .catch((e) => console.error("Error cargando notificaciones", e));
+  }, [pathname]);
 
   const toggleDarkMode = () => {
     const newMode = !isDark;
@@ -139,7 +153,7 @@ export default function Navbar({ activePage }: NavbarProps) {
       {/* Navegación Principal */}
       <nav className="hidden lg:flex items-center gap-1 p-1.5 rounded-2xl border shadow-xs" style={{ backgroundColor: theme.subtle, borderColor: theme.border }}>
         {navItems.map((item) => {
-          const isActive = activePage === item.id;
+          const isActive = paginaActiva === item.id;
           return (
             <button
               key={item.id}

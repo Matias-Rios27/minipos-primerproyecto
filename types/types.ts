@@ -5,11 +5,11 @@ export interface Producto {
   nombre: string;
   precio: number;
   stock: number;
-  stock_minimo?: number;
+  stock_minimo: number;
   categoria?: string;
-  categoria_id?: number;
-  proveedor_id?: number;
-  imagen_url?: string;
+  categoria_id?: number | null;
+  proveedor_id?: number | null;
+  imagen_url?: string | null;
   activo: boolean;
 }
 
@@ -21,20 +21,19 @@ export interface Categoria {
 export interface Proveedor {
   proveedor_id: number;
   nombre: string;
-  telefono?: string;
-  email?: string;
-  direccion?: string;
+  telefono?: string | null;
+  email?: string | null;
+  direccion?: string | null;
   activo?: boolean;
-  fecha_creacion?: number;
+  fecha_creacion?: string;
 }
 
 export interface Venta {
   venta_id: number;
-  usuario_id: number;
-  producto_id: number;
+  usuario_id: string | null;
   total: number;
   fecha_venta: string;
-  usuario_nombre?: string;
+  usuario_nombre?: string | null;
 }
 
 export interface VentaExitosa {
@@ -50,16 +49,18 @@ export interface DetalleVenta {
   cantidad: number;
   precio_unitario: number;
   subtotal: number;
-  nombre_producto?: string;
-  imagen_url?: string;
+  nombre_producto?: string | null;
+  imagen_url?: string | null;
 }
 
 export interface Alerta {
   notificacion_id: number;
-  mensaje: string;
-  tipo: 'stock' | 'vencimiento' | 'otro';
+  producto_id?: number | null;
+  producto_nombre?: string | null;
+  mensaje: string | null;
+  tipo: string | null;
   leida: boolean;
-  fecha: string;
+  fecha_creacion: string;
 }
 
 export interface CartItem extends Producto {
@@ -84,13 +85,13 @@ export interface CategoriaGasto {
 
 export interface Gasto {
   gasto_id: number;
-  usuario_id?: number;
-  categoria_id?: number;
-  descripcion: string;
+  usuario_id?: string | null;
+  categoria_id?: number | null;
+  descripcion: string | null;
   monto: number;
   fecha_gasto: string;
-  categoria_nombre?: string;
-  usuario_nombre?: string;
+  categoria_nombre?: string | null;
+  usuario_nombre?: string | null;
 }
 
 // ── Dashboard ─────────────────────────────────────────────────────────────

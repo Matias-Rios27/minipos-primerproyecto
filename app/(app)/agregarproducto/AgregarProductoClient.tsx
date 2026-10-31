@@ -1,0 +1,253 @@
+"use client";
+
+import { useIsDark } from "@/app/components/ThemeProvider";
+import { useState, useEffect, useRef, ChangeEvent } from "react";
+import { useRouter } from "next/navigation";
+import { createProducto } from "@/lib/api";
+import type { Categoria, Proveedor } from "@/types/types";
+import Icon from "@/app/components/Icon";
+
+interface AgregarProductoClientProps {
+  categorias: Categoria[];
+  proveedores: Proveedor[];
+}
+
+export default function AgregarProductoClient({ categorias, proveedores }: AgregarProductoClientProps) {
+  const router = useRouter();
+  const [isDark, setIsDark] = useIsDark();
+  const [isMounted, setIsMounted] = useState(false);
+  
+  // ESTADOS DE CARGA Y DATOS DE BD
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // ESTADO DEL FORMULARIO (CAPTURA DE DATOS)
+  const [formData, setFormData] = useState({
+    nombre: "",
+    precio: "",
+    stock: "",
+    stock_minimo: "",
+    categoria_id: "",
+    proveedor_id: ""
+  });
+
+  const [imagen, setImagen] = useState<File | null>(null);
+  const [preview, setPreview] = useState<string | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    
+    const isDarkMode = document.documentElement.classList.contains("dark");
+    setIsDark(isDarkMode);
+    const timer = setTimeout(() => setIsMounted(true), 100);
+
+    return () => {
+      clearTimeout(timer);
+    };
+  }, []);
+
+  // MANEJADORES DE INPUTS
+  const handleInputChange = (e: ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+    setFormData({ ...formData, [e.target.name]: e.target.value });
+  };
+
+  const handleImageChange = (e: ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      if (!file.type.startsWith("image/") && !/\.(jpg|jpeg|png|gif|webp|svg|bmp|jfif|avif)$/i.test(file.name)) {
+        alert("Por favor selecciona un formato de imagen válido (JPG, PNG, WEBP...).");
+        return;
+      }
+      setImagen(file);
+      const reader = new FileReader();
+      reader.onloadend = () => setPreview(reader.result as string);
+      reader.readAsDataURL(file);
+    }
+  };
+
+  // ENVÍO A BASE DE DATOS
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsSubmitting(true);
+
+    try {
+      // Usamos el FormData nativo del navegador para el archivo
+      const data = new (window as any).FormData();
+      data.append("nombre", formData.nombre);
+      data.append("precio", formData.precio);
+      data.append("stock", formData.stock);
+      data.append("stock_minimo", formData.stock_minimo);
+      data.append("categoria_id", formData.categoria_id);
+      data.append("proveedor_id", formData.proveedor_id);
+      if (imagen) data.append("imagen", imagen);
+
+      await createProducto(data);
+      alert("Producto guardado correctamente");
+      router.push("/inventario");
+    } catch (err) {
+      alert("Error al guardar el producto");
+    } finally {
+      setIsSubmitting(false);
+    }
+  };
+
+  const triggerFileInput = () => fileInputRef.current?.click();
+
+  const theme = {
+    bg: isDark ? "#0B1120" : "#F8FAFC",
+    header: isDark ? "rgba(17, 24, 39, 0.9)" : "rgba(255, 255, 255, 0.9)",
+    card: isDark ? "#111827" : "#FFFFFF",
+    text: isDark ? "#F1F5F9" : "#1E293B",
+    textMuted: isDark ? "#94A3B8" : "#64748B",
+    border: isDark ? "#1E293B" : "#E2E8F0",
+    subtle: isDark ? "#1F2937" : "#F1F5F9",
+  };
+
+  const inputClass = "w-full border rounded-2xl py-4 px-6 outline-none transition-all text-sm font-bold focus:ring-4 focus:ring-blue-500/10";
+  const labelClass = "text-[10px] font-black uppercase ml-2 mb-2 block tracking-widest";
+
+  
+
+
+  return (
+    <div 
+      className={`flex flex-col flex-1 min-h-0 font-sans overflow-hidden ${isMounted ? "transition-colors duration-500" : "transition-none"}`}
+      style={{ backgroundColor: theme.bg, color: theme.text }}
+    >
+      
+      {/* HEADER UNIFICADO */}
+
+      {/* CONTENIDO PRINCIPAL */}
+      <main className="flex-1 overflow-y-auto p-8">
+        <div className="max-w-5xl mx-auto">
+          <button 
+            onClick={() => router.back()} 
+            className="mb-6 flex items-center gap-2 font-bold text-xs uppercase tracking-widest opacity-60 hover:opacity-100 transition-all group"
+          >
+            <span className="transition-transform group-hover:-translate-x-1">←</span> Cancelar y Volver
+          </button>
+
+          <div 
+            className={`rounded-3xl border shadow-2xl overflow-hidden ${isMounted ? "transition-colors duration-500" : ""}`} 
+            style={{ backgroundColor: theme.card, borderColor: theme.border }}
+          >
+            <div className={`p-8 border-b flex justify-between items-center ${isMounted ? "transition-colors duration-500" : ""}`} 
+                 style={{ borderColor: theme.border, backgroundColor: theme.subtle }}>
+              <div>
+                <h2 className="text-xl font-black uppercase tracking-tighter">Ficha Técnica de Producto</h2>
+                <p className="text-xs font-bold opacity-50 uppercase">Vinculación: Table productos x Table proveedores</p>
+              </div>
+              <div className="flex items-center gap-3 bg-emerald-500/10 text-emerald-500 px-4 py-2 rounded-xl border border-emerald-500/20">
+                <span className="text-[10px] font-black uppercase">Estado: Activo</span>
+                <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+              </div>
+            </div>
+
+            {/* FORMULARIO CONECTADO */}
+            <form onSubmit={handleSubmit} className="p-10 grid grid-cols-1 md:grid-cols-3 gap-8">
+              
+              {/* ZONA DE CARGA DE IMAGEN */}
+              <div className="md:col-span-1 flex flex-col gap-4">
+                <label className={labelClass} style={{ color: theme.textMuted }}>Imagen del Producto</label>
+                <input type="file" ref={fileInputRef} onChange={handleImageChange} accept="*/*" className="hidden" />
+
+                <div 
+                  onClick={triggerFileInput}
+                  className={`aspect-square rounded-3xl border-2 border-dashed flex flex-col items-center justify-center p-4 transition-all hover:border-blue-500/50 group cursor-pointer overflow-hidden ${isMounted ? "transition-colors" : ""}`}
+                  style={{ borderColor: theme.border, backgroundColor: theme.subtle }}
+                >
+                  {preview ? (
+                    <img src={preview} alt="Vista previa" className="w-full h-full object-cover rounded-2xl" />
+                  ) : (
+                    <>
+                      <span className="text-4xl mb-4 group-hover:scale-110 transition-transform"><Icon name="camera" /></span>
+                      <p className="text-[10px] font-black uppercase text-center opacity-40 px-4">Arrastra o selecciona la imagen del producto</p>
+                    </>
+                  )}
+                </div>
+                
+                <button 
+                  type="button" 
+                  onClick={triggerFileInput}
+                  className="w-full py-3 bg-blue-600 text-white text-[10px] font-black uppercase text-center rounded-xl hover:bg-blue-700 shadow-lg shadow-blue-500/20 active:scale-95 transition-all"
+                >
+                  {preview ? "Cambiar Imagen" : "Cargar Imagen"}
+                </button>
+              </div>
+
+              {/* CAMPOS DE DATOS */}
+              <div className="md:col-span-2 grid grid-cols-1 md:grid-cols-2 gap-6">
+                <div className="md:col-span-2">
+                  <label className={labelClass} style={{ color: theme.textMuted }}>Nombre Comercial</label>
+                  <input name="nombre" required value={formData.nombre} onChange={handleInputChange} type="text" placeholder="EJ: COCA COLA ORIGINAL 1.5L" className={inputClass}
+                    style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }} />
+                </div>
+
+                {/* CATEGORÍA DINÁMICA */}
+                <div>
+                  <label className={labelClass} style={{ color: theme.textMuted }}>Categoría (Relación)</label>
+                  <select name="categoria_id" required value={formData.categoria_id} onChange={handleInputChange} className={inputClass} style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }}>
+                    <option value="">Seleccionar categoría...</option>
+                    {categorias.map(cat => (
+                        <option key={cat.categoria_id} value={cat.categoria_id}>{cat.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* PROVEEDOR DINÁMICO */}
+                <div>
+                  <label className={labelClass} style={{ color: theme.textMuted }}>Proveedor (Relación)</label>
+                  <select name="proveedor_id" required value={formData.proveedor_id} onChange={handleInputChange} className={inputClass} style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }}>
+                    <option value="">Seleccionar proveedor...</option>
+                    {proveedores.map(prov => (
+                        <option key={prov.proveedor_id} value={prov.proveedor_id}>{prov.nombre}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className={labelClass} style={{ color: theme.textMuted }}>Precio Venta ($)</label>
+                  <input name="precio" required value={formData.precio} onChange={handleInputChange} type="number" placeholder="0" className={`${inputClass} text-blue-500`}
+                    style={{ backgroundColor: theme.subtle, borderColor: theme.border }} />
+                </div>
+
+                <div>
+                  <label className={labelClass} style={{ color: theme.textMuted }}>Stock Inicial</label>
+                  <input name="stock" required value={formData.stock} onChange={handleInputChange} type="number" placeholder="0" className={inputClass}
+                    style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.text }} />
+                </div>
+
+                <div className="md:col-span-2">
+                  <label className={labelClass} style={{ color: theme.textMuted }}>Stock Mínimo (Alerta)</label>
+                  <input name="stock_minimo" required value={formData.stock_minimo} onChange={handleInputChange} type="number" placeholder="Ej: 10" className={`${inputClass} text-rose-500`}
+                    style={{ backgroundColor: theme.subtle, borderColor: theme.border }} />
+                </div>
+
+                <div className="md:col-span-2 flex items-center gap-3 p-4 rounded-2xl border-2 border-dashed mt-2" style={{ borderColor: theme.border }}>
+                   <input type="checkbox" defaultChecked className="w-6 h-6 rounded-lg accent-blue-600" id="prod-activo" />
+                   <label htmlFor="prod-activo" className="text-[10px] font-black uppercase cursor-pointer opacity-70">
+                     Habilitar inmediatamente para la venta en el POS
+                   </label>
+                </div>
+              </div>
+
+              {/* BOTONES DE ACCIÓN */}
+              <div className={`md:col-span-3 pt-6 mt-6 border-t flex gap-4 ${isMounted ? "border-t transition-colors" : ""}`} style={{ borderColor: theme.border }}>
+                <button type="submit" disabled={isSubmitting} className="flex-1 bg-[#1E3A5F] text-white py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] hover:bg-slate-800 transition-all shadow-xl shadow-blue-900/20 active:scale-[0.98] disabled:opacity-50">
+                  {isSubmitting ? "Guardando..." : "Guardar en Base de Datos"}
+                </button>
+                <button 
+                  type="reset" 
+                  onClick={() => { setPreview(null); setImagen(null); setFormData({nombre:"", precio:"", stock:"", stock_minimo:"", categoria_id:"", proveedor_id:""}); }}
+                  className="px-10 py-5 rounded-2xl font-black text-xs uppercase tracking-[0.2em] border transition-all active:scale-95"
+                  style={{ backgroundColor: theme.subtle, borderColor: theme.border, color: theme.textMuted }}
+                >
+                  Limpiar
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      </main>
+    </div>
+  );
+}

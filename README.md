@@ -1,36 +1,63 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# MiniPOS
 
-## Getting Started
+Sistema de punto de venta para supermercados y negocios de barrio. El frontend habla directo con Supabase (Postgres, Auth y Storage); la seguridad se aplica con RLS y la logica de ventas vive en funciones de Postgres.
 
-First, run the development server:
+## Stack
+
+- Next.js 16 (App Router), React 19, TypeScript
+- Tailwind CSS 4, framer-motion
+- Supabase (`@supabase/supabase-js` y `@supabase/ssr`), jsPDF (tickets e informes en PDF)
+
+## Funcionalidades
+
+- Punto de venta con carrito, control de stock y ticket PDF
+- Inventario de productos y proveedores
+- Historial de ventas con detalle y edicion
+- Dashboard, balance mensual y control de gastos
+- Notificaciones de stock bajo y tema claro/oscuro
+
+## Puesta en marcha
+
+1. Instalar dependencias:
+
+```bash
+npm install
+```
+
+2. Crear el archivo `.env.local` a partir de la plantilla:
+
+```bash
+cp .env.example .env.local
+```
+
+3. Completar `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` con los datos del proyecto en Supabase (Project Settings, API Keys).
+
+4. Levantar el servidor de desarrollo:
 
 ```bash
 npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+La aplicacion queda disponible en http://localhost:3000.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## Variables de entorno
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+| Variable | Descripcion |
+|---|---|
+| `NEXT_PUBLIC_SUPABASE_URL` | URL del proyecto Supabase. |
+| `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY` | Clave publica (publishable). Es segura en el navegador porque los datos los protege RLS. |
 
-## Learn More
+## Scripts
 
-To learn more about Next.js, take a look at the following resources:
+| Comando | Accion |
+|---|---|
+| `npm run dev` | Servidor de desarrollo |
+| `npm run build` | Build de produccion |
+| `npm run start` | Servidor de produccion |
+| `npm run lint` | Linter |
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+## Base de datos
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
-
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- Esquema y relaciones: [docs/esquema-bd.md](docs/esquema-bd.md)
+- Migraciones SQL: `supabase/migrations/`
+- Tipos generados: `types/database.types.ts` (regenerar cuando cambie el esquema)

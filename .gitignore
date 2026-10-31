@@ -39,3 +39,9 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# excepcion: la plantilla de variables si se versiona
+!.env.example
+
+# registros y capturas de Playwright MCP
+.playwright-mcp/

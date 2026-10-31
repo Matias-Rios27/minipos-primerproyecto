@@ -3,8 +3,9 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import api, { deleteNotificacion } from "@/lib/api";
+import { createClient } from "@/lib/supabase/client";
 import Image from "next/image";
+import Icon from "@/app/components/Icon";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -41,64 +42,63 @@ export default function LoginPage() {
     />,
   ];
 
-  useEffect(() => {
-    const token =
-      localStorage.getItem("token") || sessionStorage.getItem("token");
-    const savedEmail = localStorage.getItem("remembered_email");
+useEffect(() => {
+  const savedEmail = localStorage.getItem("remembered_email");
+  if (savedEmail) {
+    setEmail(savedEmail);
+    setRememberMe(true);
+  }
 
-    if (savedEmail) {
-      setEmail(savedEmail);
-      setRememberMe(true);
-    }
+  createClient().auth.getUser().then(({ data }) => {
+    if (data.user) router.push("/Main");
+  });
+}, [router]);
 
-    if (token && token !== "undefined") {
-      router.push("/Main");
-    }
-  }, [router]);
 
 const handleSubmit = async (e: React.FormEvent) => {
   e.preventDefault();
   setLoading(true);
   setError("");
 
-  try {
-    const response = await api.post("/api/auth/login", { email, password });
-    const { token, user } = response.data;
-
-    const activeId = user?.usuario_id || user?.id;
-    const nombreUsuario = user?.nombre || "Usuario";
-
-    const storage = rememberMe ? localStorage : sessionStorage;
-    const otherStorage = rememberMe ? sessionStorage : localStorage;
-
-    // 🔑 Limpia el storage contrario para que no queden datos de otra sesión/cuenta
-    otherStorage.removeItem("token");
-    otherStorage.removeItem("user_name");
-    otherStorage.removeItem("user_id");
-
-    if (token) storage.setItem("token", token);
-    storage.setItem("user_name", nombreUsuario);
-
-    if (activeId) {
-      storage.setItem("user_id", activeId.toString());
-    } else {
-      console.error("El backend no envió el ID del usuario dentro del objeto user", user);
-    }
-
-    if (rememberMe) {
-      localStorage.setItem("remembered_email", email);
-    } else {
-      localStorage.removeItem("remembered_email");
-    }
-
-    setSuccessMsg(`Sesión iniciada: Hola, ${nombreUsuario}`);
-    setTimeout(() => router.push("/Main"), 1500);
-  } catch (err: any) {
-    setError(err.response?.data?.message || "Error de autenticación");
+  const mostrarError = (mensaje: string) => {
+    setError(mensaje);
     setTimeout(() => setError(""), 4000);
-  } finally {
     setLoading(false);
+  };
+
+  const supabase = createClient();
+  const { data, error: authError } = await supabase.auth.signInWithPassword({
+    email,
+    password,
+  });
+
+  if (authError || !data.user) {
+    mostrarError("Credenciales inválidas");
+    return;
   }
+
+  // Auth no conoce el estado del usuario: se valida contra su perfil
+  const { data: perfil } = await supabase
+    .from("perfiles")
+    .select("nombre, estado")
+    .eq("id", data.user.id)
+    .single();
+
+  if (!perfil || perfil.estado !== "activo") {
+    await supabase.auth.signOut();
+    mostrarError("Usuario inactivo o sin perfil");
+    return;
+  }
+
+  if (rememberMe) {
+    localStorage.setItem("remembered_email", email);
+  } else {
+    localStorage.removeItem("remembered_email");
+  }
+
+  setSuccessMsg(`Sesión iniciada: Hola, ${perfil.nombre}`);
+  setTimeout(() => router.push("/Main"), 1500);
+  setLoading(false);
 };
 
   const handleGuestLogin = () => {
@@ -213,7 +213,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   onClick={() => setShowPassword(!showPassword)}
                   className="absolute right-5 top-1/2 -translate-y-1/2 text-slate-300 hover:text-blue-500 transition-colors"
                 >
-                  {showPassword ? "🙈" : "👁️"}
+                  {showPassword ? <Icon name="eye-off" /> : <Icon name="eye" />}
                 </button>
               </div>
             </div>
@@ -246,7 +246,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   exit={{ opacity: 0 }}
                   className="bg-rose-50 border border-rose-100 p-4 rounded-2xl flex items-center gap-3 text-rose-600"
                 >
-                  <span className="text-lg">⚠️</span>
+                  <span className="text-lg"><Icon name="alert" /></span>
                   <p className="text-xs font-bold">{error}</p>
                 </motion.div>
               )}
@@ -256,7 +256,7 @@ const handleSubmit = async (e: React.FormEvent) => {
                   animate={{ opacity: 1, scale: 1 }}
                   className="bg-emerald-50 border border-emerald-100 p-4 rounded-2xl flex items-center gap-3 text-emerald-600"
                 >
-                  <span className="text-lg">✅</span>
+                  <span className="text-lg"><Icon name="check-circle" /></span>
                   <p className="text-xs font-bold">{successMsg}</p>
                 </motion.div>
               )}
