@@ -61,3 +61,17 @@ La aplicacion queda disponible en http://localhost:3000.
 - Esquema y relaciones: [docs/esquema-bd.md](docs/esquema-bd.md)
 - Migraciones SQL: `supabase/migrations/`
 - Tipos generados: `types/database.types.ts` (regenerar cuando cambie el esquema)
+
+## Despliegue en Vercel
+
+1. En el proyecto de Vercel, **Settings > Environment Variables**, crea las dos variables y marca los entornos
+   Production, Preview y Development:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY`
+2. Vuelve a desplegar. Las variables `NEXT_PUBLIC_*` se incorporan al compilar, asi que agregarlas no basta: hay que
+   redeployar para que el build las vea.
+3. Recomendado: en **Settings > Functions > Function Region** elige `iad1` (Washington D. C.), la misma region que la base
+   de datos (us-east-1). Las paginas piden sus datos en el servidor y cada consulta baja de ~170 ms a ~10 ms.
+
+Si faltan las variables, la aplicacion responde con un error que indica cual falta.
+
