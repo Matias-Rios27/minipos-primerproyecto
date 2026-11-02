@@ -1,12 +1,22 @@
 import { createServerClient } from "@supabase/ssr";
 import type { Database } from "@/types/database.types";
 import { NextResponse, type NextRequest } from "next/server";
-import { variablesSupabase } from "./env";
+import { mensajeVariablesFaltantes, variablesFaltantes, variablesSupabase } from "./env";
 
 const RUTAS_PUBLICAS = ["/", "/login"];
 
 // Renueva la sesion en cada navegacion y protege las rutas privadas
 export async function updateSession(request: NextRequest) {
+  // Sin variables toda ruta fallaria con un "Internal Server Error" que oculta la causa:
+  // se responde con texto claro (solo nombres de variables, nunca valores).
+  const faltan = variablesFaltantes();
+  if (faltan.length > 0) {
+    return new NextResponse(mensajeVariablesFaltantes(faltan), {
+      status: 500,
+      headers: { "content-type": "text/plain; charset=utf-8" },
+    });
+  }
+
   let response = NextResponse.next({ request });
 
   const { url, key } = variablesSupabase();
